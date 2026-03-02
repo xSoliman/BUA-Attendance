@@ -4,6 +4,7 @@
 const API_BASE_URL = 'https://bua-attendance.onrender.com/api';
 const COOLDOWN_DURATION = 30000; // 30 seconds in milliseconds
 const TOAST_DURATION = 3000; // 3 seconds
+const REQUEST_TIMEOUT = 10000; // 10 seconds timeout for requests
 
 // State Management
 let sessionContext = {
@@ -18,6 +19,19 @@ let isProcessing = false; // Flag to prevent concurrent scans
 let processingQueue = new Set(); // Track IDs being processed
 
 // Utility Functions
+function showLoader() {
+    const loader = document.getElementById('loading-overlay');
+    if (loader) {
+        loader.style.display = 'flex';
+    }
+}
+
+function hideLoader() {
+    const loader = document.getElementById('loading-overlay');
+    if (loader) {
+        loader.style.display = 'none';
+    }
+}
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
     if (!container) return;
@@ -113,8 +127,17 @@ async function recordAttendance(studentId) {
     isProcessing = true;
     processingQueue.add(studentId);
     
+    // Show loader
+    showLoader();
+    
+    // Create timeout promise
+    const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout')), REQUEST_TIMEOUT);
+    });
+    
     try {
-        const response = await fetch(`${API_BASE_URL}/attendance`, {
+        // Race between fetch and timeout
+        const fetchPromise = fetch(`${API_BASE_URL}/attendance`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -125,6 +148,7 @@ async function recordAttendance(studentId) {
             })
         });
         
+        const response = await Promise.race([fetchPromise, timeoutPromise]);
         const result = await response.json();
         
         if (result.status === 'success') {
@@ -139,13 +163,18 @@ async function recordAttendance(studentId) {
             // Don't add to cooldown for errors - allow retry
         }
     } catch (error) {
-        if (!navigator.onLine) {
+        if (error.message === 'Request timeout') {
+            showToast('Request timeout. Please try again.', 'error');
+        } else if (!navigator.onLine) {
             showToast('Offline - will retry when connected', 'warning');
         } else {
             showToast('Network error. Please try again.', 'error');
         }
         // Don't add to cooldown for network errors - allow retry
     } finally {
+        // Hide loader
+        hideLoader();
+        
         // Remove from processing queue
         processingQueue.delete(studentId);
         // Allow new scans after a short delay
