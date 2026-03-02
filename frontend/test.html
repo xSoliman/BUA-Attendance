@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Integration Test - QR Attendance</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .test-result.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .test-result.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .test-result.pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        button {
+            margin: 5px;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Integration Test Page</h1>
+            <p>Test backend API endpoints and frontend integration</p>
+        </header>
+        
+        <main>
+            <div class="test-section">
+                <h2>Backend Connection</h2>
+                <button onclick="testHealth()">Test Health Endpoint</button>
+                <button onclick="testServiceEmail()">Test Service Account Email</button>
+                <div id="backend-results"></div>
+            </div>
+            
+            <div class="test-section">
+                <h2>Spreadsheet Operations</h2>
+                <input type="text" id="test-spreadsheet-id" placeholder="Enter Spreadsheet ID" style="width: 400px;">
+                <br>
+                <button onclick="testValidateSpreadsheet()">Test Validate Spreadsheet</button>
+                <button onclick="testGetSheets()">Test Get Sheets</button>
+                <div id="spreadsheet-results"></div>
+            </div>
+            
+            <div class="test-section">
+                <h2>Sheet Operations</h2>
+                <input type="text" id="test-sheet-name" placeholder="Enter Sheet Name (e.g., CS101)" style="width: 300px;">
+                <br>
+                <button onclick="testGetColumns()">Test Get Columns</button>
+                <div id="sheet-results"></div>
+            </div>
+            
+            <div class="test-section">
+                <h2>Attendance Recording</h2>
+                <input type="text" id="test-student-id" placeholder="Enter Student ID" style="width: 200px;">
+                <input type="text" id="test-column-name" placeholder="Column Name (e.g., Week 1)" style="width: 200px;">
+                <br>
+                <button onclick="testRecordAttendance()">Test Record Attendance</button>
+                <div id="attendance-results"></div>
+            </div>
+            
+            <div class="test-section">
+                <h2>LocalStorage Test</h2>
+                <button onclick="testLocalStorage()">Test LocalStorage</button>
+                <button onclick="clearLocalStorage()">Clear LocalStorage</button>
+                <div id="storage-results"></div>
+            </div>
+            
+            <div class="test-section">
+                <h2>Navigation Test</h2>
+                <button onclick="window.location.href='config.html'">Go to Config</button>
+                <button onclick="window.location.href='session.html'">Go to Session</button>
+                <button onclick="window.location.href='scanner.html'">Go to Scanner</button>
+            </div>
+        </main>
+    </div>
+    
+    <script src="app.js"></script>
+    <script>
+        function showResult(containerId, message, type) {
+            const container = document.getElementById(containerId);
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${type}`;
+            resultDiv.innerHTML = message;
+            container.appendChild(resultDiv);
+        }
+        
+        function clearResults(containerId) {
+            document.getElementById(containerId).innerHTML = '';
+        }
+        
+        async function testHealth() {
+            clearResults('backend-results');
+            showResult('backend-results', 'Testing health endpoint...', 'pending');
+            
+            try {
+                const response = await fetch('http://localhost:8000/health');
+                const data = await response.json();
+                showResult('backend-results', 
+                    `✓ Health check passed<br><pre>${JSON.stringify(data, null, 2)}</pre>`, 
+                    'success');
+            } catch (error) {
+                showResult('backend-results', 
+                    `✗ Health check failed: ${error.message}`, 
+                    'error');
+            }
+        }
+        
+        async function testServiceEmail() {
+            clearResults('backend-results');
+            showResult('backend-results', 'Testing service account email endpoint...', 'pending');
+            
+            try {
+                const email = await fetchServiceAccountEmail();
+                showResult('backend-results', 
+                    `✓ Service account email: ${email}`, 
+                    'success');
+            } catch (error) {
+                showResult('backend-results', 
+                    `✗ Failed to get service account email: ${error.message}`, 
+                    'error');
+            }
+        }
+        
+        async function testValidateSpreadsheet() {
+            clearResults('spreadsheet-results');
+            const spreadsheetId = document.getElementById('test-spreadsheet-id').value;
+            
+            if (!spreadsheetId) {
+                showResult('spreadsheet-results', '✗ Please enter a Spreadsheet ID', 'error');
+                return;
+            }
+            
+            showResult('spreadsheet-results', 'Validating spreadsheet...', 'pending');
+            
+            try {
+                const result = await validateSpreadsheet(spreadsheetId);
+                showResult('spreadsheet-results', 
+                    `${result.valid ? '✓' : '✗'} ${result.message}<br><pre>${JSON.stringify(result, null, 2)}</pre>`, 
+                    result.valid ? 'success' : 'error');
+            } catch (error) {
+                showResult('spreadsheet-results', 
+                    `✗ Validation failed: ${error.message}`, 
+                    'error');
+            }
+        }
+        
+        async function testGetSheets() {
+            clearResults('spreadsheet-results');
+            const spreadsheetId = document.getElementById('test-spreadsheet-id').value;
+            
+            if (!spreadsheetId) {
+                showResult('spreadsheet-results', '✗ Please enter a Spreadsheet ID', 'error');
+                return;
+            }
+            
+            showResult('spreadsheet-results', 'Fetching sheets...', 'pending');
+            
+            try {
+                const sheets = await fetchSheets(spreadsheetId);
+                showResult('spreadsheet-results', 
+                    `✓ Found ${sheets.length} sheets<br><pre>${JSON.stringify(sheets, null, 2)}</pre>`, 
+                    'success');
+            } catch (error) {
+                showResult('spreadsheet-results', 
+                    `✗ Failed to fetch sheets: ${error.message}`, 
+                    'error');
+            }
+        }
+        
+        async function testGetColumns() {
+            clearResults('sheet-results');
+            const spreadsheetId = document.getElementById('test-spreadsheet-id').value;
+            const sheetName = document.getElementById('test-sheet-name').value;
+            
+            if (!spreadsheetId || !sheetName) {
+                showResult('sheet-results', '✗ Please enter Spreadsheet ID and Sheet Name', 'error');
+                return;
+            }
+            
+            showResult('sheet-results', 'Fetching columns...', 'pending');
+            
+            try {
+                const columns = await fetchColumns(spreadsheetId, sheetName);
+                showResult('sheet-results', 
+                    `✓ Found ${columns.length} attendance columns<br><pre>${JSON.stringify(columns, null, 2)}</pre>`, 
+                    'success');
+            } catch (error) {
+                showResult('sheet-results', 
+                    `✗ Failed to fetch columns: ${error.message}`, 
+                    'error');
+            }
+        }
+        
+        async function testRecordAttendance() {
+            clearResults('attendance-results');
+            const spreadsheetId = document.getElementById('test-spreadsheet-id').value;
+            const sheetName = document.getElementById('test-sheet-name').value;
+            const studentId = document.getElementById('test-student-id').value;
+            const columnName = document.getElementById('test-column-name').value;
+            
+            if (!spreadsheetId || !sheetName || !studentId || !columnName) {
+                showResult('attendance-results', '✗ Please fill in all fields', 'error');
+                return;
+            }
+            
+            showResult('attendance-results', 'Recording attendance...', 'pending');
+            
+            // Set session context temporarily
+            sessionContext.spreadsheetId = spreadsheetId;
+            sessionContext.sheetName = sheetName;
+            sessionContext.columnName = columnName;
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/attendance`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        spreadsheet_id: spreadsheetId,
+                        sheet_name: sheetName,
+                        column_name: columnName,
+                        student_id: studentId
+                    })
+                });
+                
+                const result = await response.json();
+                showResult('attendance-results', 
+                    `${result.status === 'success' ? '✓' : '✗'} ${result.message}<br><pre>${JSON.stringify(result, null, 2)}</pre>`, 
+                    result.status === 'success' ? 'success' : 'error');
+            } catch (error) {
+                showResult('attendance-results', 
+                    `✗ Failed to record attendance: ${error.message}`, 
+                    'error');
+            }
+        }
+        
+        function testLocalStorage() {
+            clearResults('storage-results');
+            
+            // Test save
+            const testConfig = {
+                spreadsheetId: '1test123',
+                lastUpdated: new Date().toISOString()
+            };
+            
+            localStorage.setItem('qr-attendance-config', JSON.stringify(testConfig));
+            showResult('storage-results', '✓ Saved test config to localStorage', 'success');
+            
+            // Test retrieve
+            const retrieved = getStoredConfig();
+            if (retrieved && retrieved.spreadsheetId === testConfig.spreadsheetId) {
+                showResult('storage-results', 
+                    `✓ Retrieved config from localStorage<br><pre>${JSON.stringify(retrieved, null, 2)}</pre>`, 
+                    'success');
+            } else {
+                showResult('storage-results', '✗ Failed to retrieve config', 'error');
+            }
+        }
+        
+        function clearLocalStorage() {
+            clearResults('storage-results');
+            clearConfig();
+            showResult('storage-results', '✓ LocalStorage cleared', 'success');
+        }
+    </script>
+</body>
+</html>

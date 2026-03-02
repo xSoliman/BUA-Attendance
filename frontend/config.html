@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuration - QR Attendance</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Configuration</h1>
+        </header>
+        <main>
+            <div class="config-form">
+                <div class="form-group">
+                    <label for="spreadsheet-id">Google Spreadsheet ID</label>
+                    <input type="text" id="spreadsheet-id" placeholder="Enter Spreadsheet ID" />
+                    <p class="help-text">Find this in your Google Sheet URL</p>
+                </div>
+                
+                <div class="service-account-info">
+                    <h3>Setup Instructions</h3>
+                    <p>Add this email as an Editor to your Google Sheet:</p>
+                    <code id="service-account-email">Loading...</code>
+                </div>
+                
+                <button id="save-config" class="btn btn-primary">Save Configuration</button>
+                <button id="clear-config" class="btn btn-secondary" style="margin-left: 10px;">Clear Configuration</button>
+                <div id="validation-status"></div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+    
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+# Render Blueprint for QR Attendance System
+# This file allows one-click deployment to Render.com
+
+services:
+  # Backend API Service
+  - type: web
+    name: qr-attendance-backend
+    runtime: python
+    region: oregon
+    plan: free
+    branch: main
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GOOGLE_SERVICE_ACCOUNT_JSON
+        sync: false  # Must be set manually in Render dashboard
+      - key: FRONTEND_ORIGIN
+        value: https://qr-attendance-frontend.onrender.com
+    healthCheckPath: /health
+
+  # Frontend Static Site
+  - type: web
+    name: qr-attendance-frontend
+    runtime: static
+    region: oregon
+    plan: free
+    branch: main
+    rootDir: frontend
+    buildCommand: echo "No build needed"
+    staticPublishPath: .
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=3600
