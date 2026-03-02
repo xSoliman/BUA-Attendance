@@ -32,7 +32,16 @@
                 </div>
             </div>
             
-            <!-- Scanned Students List -->
+            <!-- Manual Entry (moved right after scanner) -->
+            <div class="manual-entry">
+                <h3>Manual Entry</h3>
+                <div class="form-group">
+                    <input type="text" id="manual-id" placeholder="Enter Student ID" />
+                    <button id="submit-manual" class="btn btn-primary">Submit</button>
+                </div>
+            </div>
+            
+            <!-- Scanned Students List (moved to end) -->
             <div class="scanned-list-container">
                 <div class="scanned-list-header">
                     <h3>Scanned Students (<span id="scan-count">0</span>)</h3>
@@ -45,7 +54,7 @@
                 </div>
             </div>
             
-            <!-- Action Buttons -->
+            <!-- Action Buttons (moved to end) -->
             <div class="action-buttons">
                 <button id="end-session" class="btn btn-primary btn-large">
                     ✓ End Session & Submit
@@ -53,14 +62,6 @@
                 <button id="clear-scans" class="btn btn-secondary">
                     🗑️ Clear All
                 </button>
-            </div>
-            
-            <div class="manual-entry">
-                <h3>Manual Entry</h3>
-                <div class="form-group">
-                    <input type="text" id="manual-id" placeholder="Enter Student ID" />
-                    <button id="submit-manual" class="btn btn-primary">Submit</button>
-                </div>
             </div>
             
             <div id="toast-container"></div>
