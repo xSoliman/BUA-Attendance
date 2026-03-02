@@ -763,9 +763,34 @@ function initScannerPage() {
     const changeBtn = document.getElementById('change-session');
     if (changeBtn) {
         changeBtn.addEventListener('click', () => {
-            stopScanner();
-            clearCooldown();
-            window.location.href = 'session.html';
+            // Warn user about clearing session data
+            const hasScannedData = scannedStudents.length > 0;
+            let confirmMessage = 'Change to a different session?';
+            
+            if (hasScannedData) {
+                confirmMessage = `You have ${scannedStudents.length} scanned student(s).\n\n` +
+                                `Changing session will clear this data.\n\n` +
+                                `Continue?`;
+            }
+            
+            if (confirm(confirmMessage)) {
+                // Stop scanner first
+                stopScanner();
+                
+                // Clear all session data
+                scannedStudents = [];
+                cooldownCache.clear();
+                processingQueue.clear();
+                isProcessing = false;
+                lastScanTime = 0;
+                
+                // Clear session storage
+                sessionStorage.removeItem('scanned-students');
+                sessionStorage.removeItem('qr-attendance-session');
+                
+                // Navigate to session page
+                window.location.href = 'session.html';
+            }
         });
     }
 }
