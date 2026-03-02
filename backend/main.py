@@ -287,3 +287,94 @@ async def record_attendance(request: AttendanceRequest):
         student_id=request.student_id
     )
     return result
+
+
+class BatchAttendanceRequest(BaseModel):
+    """Request model for batch attendance recording."""
+    spreadsheet_id: str
+    sheet_name: str
+    column_name: str
+    student_ids: list[str]
+
+
+class BatchAttendanceResult(BaseModel):
+    """Result model for batch attendance recording."""
+    total: int
+    successful: int
+    failed: int
+    not_found: int
+    details: list[dict]
+
+
+@app.post("/api/attendance/batch")
+async def record_batch_attendance(request: BatchAttendanceRequest):
+    """
+    Record attendance for multiple students in a single batch operation.
+    
+    This endpoint processes multiple attendance records at once, which is much
+    faster than individual requests. It returns detailed results for each student.
+    
+    Args:
+        request: BatchAttendanceRequest object containing:
+            - spreadsheet_id: The Google Sheet identifier
+            - sheet_name: The course sheet name
+            - column_name: The attendance column name (e.g., "Week 1")
+            - student_ids: List of student IDs to mark attendance for
+            
+    Returns:
+        BatchAttendanceResult: Object containing summary and details
+        
+    Example Request:
+        {
+            "spreadsheet_id": "1abc...",
+            "sheet_name": "CS101",
+            "column_name": "Week 1",
+            "student_ids": ["20210001", "20210002", "20210003"]
+        }
+        
+    Example Response:
+        {
+            "total": 3,
+            "successful": 2,
+            "failed": 0,
+            "not_found": 1,
+            "details": [
+                {"student_id": "20210001", "status": "success", "message": "Attendance recorded"},
+                {"student_id": "20210002", "status": "success", "message": "Attendance recorded"},
+                {"student_id": "20210003", "status": "not_found", "message": "Student Not Found"}
+            ]
+        }
+    """
+    results = []
+    successful = 0
+    failed = 0
+    not_found = 0
+    
+    for student_id in request.student_ids:
+        result = process_attendance(
+            spreadsheet_id=request.spreadsheet_id,
+            sheet_name=request.sheet_name,
+            column_name=request.column_name,
+            student_id=student_id
+        )
+        
+        results.append({
+            "student_id": student_id,
+            "status": result.status,
+            "message": result.message
+        })
+        
+        if result.status == "success":
+            successful += 1
+        elif result.status == "not_found":
+            not_found += 1
+        else:
+            failed += 1
+    
+    return BatchAttendanceResult(
+        total=len(request.student_ids),
+        successful=successful,
+        failed=failed,
+        not_found=not_found,
+        details=results
+    )

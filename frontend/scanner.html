@@ -20,14 +20,39 @@
         </div>
         
         <main>
-            <div id="qr-reader"></div>
-            
-            <!-- Loading Overlay -->
-            <div id="loading-overlay" class="loading-overlay" style="display: none;">
-                <div class="loader-container">
-                    <div class="loader"></div>
-                    <p class="loader-text">Processing...</p>
+            <div class="scanner-container">
+                <div id="qr-reader"></div>
+                
+                <!-- Loading Overlay -->
+                <div id="loading-overlay" class="loading-overlay" style="display: none;">
+                    <div class="loader-container">
+                        <div class="loader"></div>
+                        <p class="loader-text">Processing...</p>
+                    </div>
                 </div>
+            </div>
+            
+            <!-- Scanned Students List -->
+            <div class="scanned-list-container">
+                <div class="scanned-list-header">
+                    <h3>Scanned Students (<span id="scan-count">0</span>)</h3>
+                    <button id="download-txt" class="btn btn-small btn-secondary" title="Download as TXT">
+                        📥 Download
+                    </button>
+                </div>
+                <div id="scanned-list" class="scanned-list">
+                    <p class="empty-message">No students scanned yet</p>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button id="end-session" class="btn btn-primary btn-large">
+                    ✓ End Session & Submit
+                </button>
+                <button id="clear-scans" class="btn btn-secondary">
+                    🗑️ Clear All
+                </button>
             </div>
             
             <div class="manual-entry">
