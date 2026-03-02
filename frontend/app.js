@@ -14,6 +14,8 @@ let sessionContext = {
 
 let cooldownCache = new Map();
 let qrScanner = null;
+let isProcessing = false; // Flag to prevent concurrent scans
+let processingQueue = new Set(); // Track IDs being processed
 
 // Utility Functions
 function showToast(message, type = 'success') {
@@ -107,6 +109,10 @@ async function fetchColumns(spreadsheetId, sheetName) {
 }
 
 async function recordAttendance(studentId) {
+    // Mark as processing
+    isProcessing = true;
+    processingQueue.add(studentId);
+    
     try {
         const response = await fetch(`${API_BASE_URL}/attendance`, {
             method: 'POST',
@@ -123,11 +129,14 @@ async function recordAttendance(studentId) {
         
         if (result.status === 'success') {
             showToast('Attendance Recorded', 'success');
+            // Only add to cooldown if successfully recorded
             addToCooldown(studentId);
         } else if (result.status === 'not_found') {
             showToast('Student Not Found', 'error');
+            // Don't add to cooldown for not found - allow retry
         } else {
             showToast(result.message, 'error');
+            // Don't add to cooldown for errors - allow retry
         }
     } catch (error) {
         if (!navigator.onLine) {
@@ -135,6 +144,14 @@ async function recordAttendance(studentId) {
         } else {
             showToast('Network error. Please try again.', 'error');
         }
+        // Don't add to cooldown for network errors - allow retry
+    } finally {
+        // Remove from processing queue
+        processingQueue.delete(studentId);
+        // Allow new scans after a short delay
+        setTimeout(() => {
+            isProcessing = false;
+        }, 500);
     }
 }
 
@@ -161,6 +178,8 @@ function checkCooldown(studentId) {
 
 function clearCooldown() {
     cooldownCache.clear();
+    processingQueue.clear();
+    isProcessing = false;
 }
 function cleanupCooldown() {
     const now = Date.now();
@@ -203,11 +222,29 @@ function onScanError(error) {
 }
 
 function processStudentId(studentId) {
+    // Check if already in cooldown (successfully scanned in last 30 seconds)
     if (checkCooldown(studentId)) {
         showToast('Already Scanned', 'warning');
         return;
     }
     
+    // Check if currently processing any request
+    if (isProcessing) {
+        // If processing the same ID, ignore
+        if (processingQueue.has(studentId)) {
+            return; // Silently ignore - already processing this ID
+        }
+        // If processing a different ID, show message
+        showToast('Processing previous scan...', 'warning');
+        return;
+    }
+    
+    // Check if this specific ID is being processed
+    if (processingQueue.has(studentId)) {
+        return; // Silently ignore - already processing this ID
+    }
+    
+    // All checks passed - record attendance
     recordAttendance(studentId);
 }
 
