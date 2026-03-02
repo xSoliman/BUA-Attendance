@@ -490,23 +490,13 @@ function processStudentId(studentId) {
 }
 
 function stopScanner() {
-    return new Promise((resolve) => {
-        if (qrScanner) {
-            qrScanner.stop()
-                .then(() => {
-                    qrScanner.clear();
-                    qrScanner = null; // Clear the reference
-                    resolve();
-                })
-                .catch(err => {
-                    console.error('Error stopping scanner:', err);
-                    qrScanner = null; // Clear reference even on error
-                    resolve(); // Resolve anyway to allow navigation
-                });
-        } else {
-            resolve(); // No scanner to stop
-        }
-    });
+    if (qrScanner) {
+        qrScanner.stop().then(() => {
+            qrScanner.clear();
+        }).catch(err => {
+            console.error('Error stopping scanner:', err);
+        });
+    }
 }
 
 // Page Initialization
@@ -784,8 +774,18 @@ function initScannerPage() {
             }
             
             if (confirm(confirmMessage)) {
-                // Stop scanner first and wait for it to complete
-                await stopScanner();
+                // Try to stop scanner (with timeout to prevent blocking)
+                try {
+                    if (qrScanner) {
+                        await Promise.race([
+                            qrScanner.stop().then(() => qrScanner.clear()),
+                            new Promise(resolve => setTimeout(resolve, 1000)) // 1 second timeout
+                        ]);
+                    }
+                } catch (err) {
+                    console.error('Error stopping scanner:', err);
+                    // Continue anyway - don't let scanner errors block navigation
+                }
                 
                 // Clear all session data
                 scannedStudents = [];
@@ -793,15 +793,14 @@ function initScannerPage() {
                 processingQueue.clear();
                 isProcessing = false;
                 lastScanTime = 0;
+                qrScanner = null; // Reset scanner reference
                 
                 // Clear session storage
                 sessionStorage.removeItem('scanned-students');
                 sessionStorage.removeItem('qr-attendance-session');
                 
-                // Small delay to ensure cleanup is complete
-                setTimeout(() => {
-                    window.location.href = 'session.html';
-                }, 100);
+                // Navigate to session page
+                window.location.href = 'session.html';
             }
         });
     }
