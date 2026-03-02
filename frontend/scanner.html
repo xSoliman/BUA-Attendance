@@ -1,28 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scanner - QR Attendance</title>
+    <title>Scanner — BUA Attendance</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
+
 <body>
     <div class="container">
         <header>
-            <h1>Scan Attendance</h1>
-            <button id="change-session" class="btn btn-secondary">Change Session</button>
+            <h1>
+                Scan Attendance
+                <span class="brand-sub">BUA Attendance System</span>
+            </h1>
+            <button id="change-session" class="btn btn-secondary">↩ Change Session</button>
         </header>
-        
+
+        <!-- Session info badge strip -->
         <div class="session-info">
-            <p><strong>Course:</strong> <span id="current-course">-</span></p>
-            <p><strong>Week:</strong> <span id="current-week">-</span></p>
+            <p><strong>Course</strong> <span id="current-course">—</span></p>
+            <p><strong>Week</strong> <span id="current-week">—</span></p>
         </div>
-        
+
         <main>
+            <!-- QR Scanner -->
             <div class="scanner-container">
                 <div id="qr-reader"></div>
-                
+
                 <!-- Loading Overlay -->
                 <div id="loading-overlay" class="loading-overlay" style="display: none;">
                     <div class="loader-container">
@@ -31,8 +41,8 @@
                     </div>
                 </div>
             </div>
-            
-            <!-- Manual Entry (moved right after scanner) -->
+
+            <!-- Manual Entry -->
             <div class="manual-entry">
                 <h3>Manual Entry</h3>
                 <div class="form-group">
@@ -40,33 +50,34 @@
                     <button id="submit-manual" class="btn btn-primary">Submit</button>
                 </div>
             </div>
-            
-            <!-- Scanned Students List (moved to end) -->
+
+            <!-- Scanned Students List -->
             <div class="scanned-list-container">
                 <div class="scanned-list-header">
                     <h3>Scanned Students (<span id="scan-count">0</span>)</h3>
                     <button id="download-txt" class="btn btn-small btn-secondary" title="Download as TXT">
-                        📥 Download
+                        ↓ Download
                     </button>
                 </div>
                 <div id="scanned-list" class="scanned-list">
                     <p class="empty-message">No students scanned yet</p>
                 </div>
             </div>
-            
-            <!-- Action Buttons (moved to end) -->
+
+            <!-- Action Buttons -->
             <div class="action-buttons">
                 <button id="end-session" class="btn btn-primary btn-large">
-                    ✓ End Session & Submit
+                    ✓ End Session &amp; Submit
                 </button>
                 <button id="clear-scans" class="btn btn-secondary">
-                    🗑️ Clear All
+                    🗑 Clear All
                 </button>
             </div>
-            
+
             <div id="toast-container"></div>
         </main>
     </div>
     <script src="app.js"></script>
 </body>
+
 </html>
