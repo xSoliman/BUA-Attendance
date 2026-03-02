@@ -169,9 +169,6 @@ function recordAttendanceLocally(studentId) {
     updateScannedList();
     showToast(`✓ ${studentId} scanned`, 'success');
     
-    // Show "Ready in X seconds" message
-    showScannerCooldown();
-    
     // Save to localStorage for persistence
     saveScannedStudents();
 }
@@ -466,24 +463,27 @@ function onScanError(error) {
 }
 
 function processStudentId(studentId) {
-    // Check scan delay (2 seconds between scans)
+    // Check scan delay (2 seconds between scans) - ALWAYS check first
     const now = Date.now();
     const timeSinceLastScan = now - lastScanTime;
     
     if (timeSinceLastScan < SCAN_DELAY) {
-        const remainingTime = Math.ceil((SCAN_DELAY - timeSinceLastScan) / 1000);
         // Silently ignore - scanner is in cooldown period
         return;
     }
+    
+    // Update last scan time IMMEDIATELY (before any other checks)
+    // This ensures delay activates for ALL scan attempts
+    lastScanTime = now;
+    
+    // Show countdown for next scan
+    showScannerCooldown();
     
     // Check if already in cooldown (scanned in last 30 seconds)
     if (checkCooldown(studentId)) {
         showToast('Already Scanned', 'warning');
         return;
     }
-    
-    // Update last scan time
-    lastScanTime = now;
     
     // Record locally (instant, no backend call)
     recordAttendanceLocally(studentId);
