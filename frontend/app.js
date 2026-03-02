@@ -490,13 +490,23 @@ function processStudentId(studentId) {
 }
 
 function stopScanner() {
-    if (qrScanner) {
-        qrScanner.stop().then(() => {
-            qrScanner.clear();
-        }).catch(err => {
-            console.error('Error stopping scanner:', err);
-        });
-    }
+    return new Promise((resolve) => {
+        if (qrScanner) {
+            qrScanner.stop()
+                .then(() => {
+                    qrScanner.clear();
+                    qrScanner = null; // Clear the reference
+                    resolve();
+                })
+                .catch(err => {
+                    console.error('Error stopping scanner:', err);
+                    qrScanner = null; // Clear reference even on error
+                    resolve(); // Resolve anyway to allow navigation
+                });
+        } else {
+            resolve(); // No scanner to stop
+        }
+    });
 }
 
 // Page Initialization
@@ -762,7 +772,7 @@ function initScannerPage() {
     // Change session button
     const changeBtn = document.getElementById('change-session');
     if (changeBtn) {
-        changeBtn.addEventListener('click', () => {
+        changeBtn.addEventListener('click', async () => {
             // Warn user about clearing session data
             const hasScannedData = scannedStudents.length > 0;
             let confirmMessage = 'Change to a different session?';
@@ -774,8 +784,8 @@ function initScannerPage() {
             }
             
             if (confirm(confirmMessage)) {
-                // Stop scanner first
-                stopScanner();
+                // Stop scanner first and wait for it to complete
+                await stopScanner();
                 
                 // Clear all session data
                 scannedStudents = [];
@@ -788,8 +798,10 @@ function initScannerPage() {
                 sessionStorage.removeItem('scanned-students');
                 sessionStorage.removeItem('qr-attendance-session');
                 
-                // Navigate to session page
-                window.location.href = 'session.html';
+                // Small delay to ensure cleanup is complete
+                setTimeout(() => {
+                    window.location.href = 'session.html';
+                }, 100);
             }
         });
     }
