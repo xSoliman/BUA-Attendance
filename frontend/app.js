@@ -1,7 +1,7 @@
 // QR Attendance System - Main Application Logic
 
 // Configuration
-const API_BASE_URL = 'https://bua-attendance-1.onrender.com';
+const API_BASE_URL = 'https://bua-attendance.onrender.com';
 const COOLDOWN_DURATION = 30000; // 30 seconds in milliseconds
 const TOAST_DURATION = 3000; // 3 seconds
 
