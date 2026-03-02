@@ -22,6 +22,34 @@ let scannedStudents = []; // Store scanned student IDs with timestamps
 let lastScanTime = 0; // Track last scan time for delay
 
 // Utility Functions
+function extractSpreadsheetId(input) {
+    // Remove whitespace
+    input = input.trim();
+    
+    // If it's already just an ID (no slashes), return it
+    if (!input.includes('/') && !input.includes('\\')) {
+        return input;
+    }
+    
+    // Try to extract from URL
+    // Google Sheets URL format: https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/edit...
+    const patterns = [
+        /\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/,  // Standard URL
+        /\/d\/([a-zA-Z0-9-_]+)/,                 // Short format
+        /id=([a-zA-Z0-9-_]+)/                    // Query parameter format
+    ];
+    
+    for (const pattern of patterns) {
+        const match = input.match(pattern);
+        if (match && match[1]) {
+            return match[1];
+        }
+    }
+    
+    // If no pattern matched, return the input as-is
+    return input;
+}
+
 function showLoader() {
     const loader = document.getElementById('loading-overlay');
     if (loader) {
@@ -515,10 +543,18 @@ function initConfigPage() {
     if (saveBtn) {
         saveBtn.addEventListener('click', async () => {
             const input = document.getElementById('spreadsheet-id');
-            const spreadsheetId = input.value.trim();
+            const userInput = input.value.trim();
+            
+            if (!userInput) {
+                showToast('Please enter a Spreadsheet ID or URL', 'error');
+                return;
+            }
+            
+            // Extract spreadsheet ID from URL or use as-is
+            const spreadsheetId = extractSpreadsheetId(userInput);
             
             if (!spreadsheetId) {
-                showToast('Please enter a Spreadsheet ID', 'error');
+                showToast('Invalid Spreadsheet ID or URL', 'error');
                 return;
             }
             
