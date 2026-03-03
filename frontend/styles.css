@@ -519,6 +519,13 @@ select:disabled {
     font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
 }
 
+.scanned-item .student-id-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 400;
+    margin-top: 2px;
+}
+
 .scanned-item .scan-time {
     font-size: 12px;
     color: var(--text-muted);

@@ -22,6 +22,31 @@ let scannedStudents = []; // Store scanned student IDs with timestamps
 let lastScanTime = 0; // Track last scan time for delay
 
 // Utility Functions
+function parseQRData(qrData) {
+    /**
+     * Parse QR code data to extract name and ID
+     * Supports formats:
+     * - "Name - ID" (new format with name)
+     * - "ID" (legacy format, ID only)
+     * 
+     * Returns: { name: string|null, id: string }
+     */
+    qrData = qrData.trim();
+    
+    // Check if format is "Name - ID"
+    if (qrData.includes(' - ')) {
+        const parts = qrData.split(' - ');
+        if (parts.length >= 2) {
+            const name = parts.slice(0, -1).join(' - ').trim(); // Handle names with " - " in them
+            const id = parts[parts.length - 1].trim();
+            return { name, id };
+        }
+    }
+    
+    // Legacy format: just ID
+    return { name: null, id: qrData };
+}
+
 function extractSpreadsheetId(input) {
     // Remove whitespace
     input = input.trim();
@@ -153,11 +178,12 @@ async function fetchColumns(spreadsheetId, sheetName) {
     }
 }
 
-function recordAttendanceLocally(studentId) {
+function recordAttendanceLocally(studentId, studentName = null) {
     // Add to scanned list with timestamp
     const scanTime = new Date();
     scannedStudents.push({
         id: studentId,
+        name: studentName,
         timestamp: scanTime.toISOString(),
         displayTime: scanTime.toLocaleTimeString()
     });
@@ -167,7 +193,10 @@ function recordAttendanceLocally(studentId) {
     
     // Update UI
     updateScannedList();
-    showToast(`✓ ${studentId} scanned`, 'success');
+    
+    // Show toast with name if available
+    const displayText = studentName ? `✓ ${studentName}` : `✓ ${studentId}`;
+    showToast(displayText, 'success');
     
     // Save to localStorage for persistence
     saveScannedStudents();
@@ -232,9 +261,15 @@ function updateScannedList() {
     scannedStudents.slice().reverse().forEach((student, index) => {
         const item = document.createElement('div');
         item.className = 'scanned-item';
+        
+        // Display name if available, otherwise just ID
+        const displayName = student.name ? student.name : student.id;
+        const displayId = student.name ? `ID: ${student.id}` : '';
+        
         item.innerHTML = `
             <div>
-                <div class="student-id">${student.id}</div>
+                <div class="student-id">${displayName}</div>
+                ${displayId ? `<div class="student-id-label">${displayId}</div>` : ''}
                 <div class="scan-time">${student.displayTime}</div>
             </div>
             <button class="remove-btn" onclick="removeScannedStudent('${student.id}')" title="Remove">
@@ -462,7 +497,10 @@ function onScanError(error) {
     // Ignore scan errors (they happen frequently during scanning)
 }
 
-function processStudentId(studentId) {
+function processStudentId(qrData) {
+    // Parse QR data to extract name and ID
+    const { name, id } = parseQRData(qrData);
+    
     // Check scan delay (2 seconds between scans) - ALWAYS check first
     const now = Date.now();
     const timeSinceLastScan = now - lastScanTime;
@@ -480,13 +518,14 @@ function processStudentId(studentId) {
     showScannerCooldown();
     
     // Check if already in cooldown (scanned in last 30 seconds)
-    if (checkCooldown(studentId)) {
-        showToast('Already Scanned', 'warning');
+    if (checkCooldown(id)) {
+        const displayText = name ? `${name} already scanned` : 'Already Scanned';
+        showToast(displayText, 'warning');
         return;
     }
     
     // Record locally (instant, no backend call)
-    recordAttendanceLocally(studentId);
+    recordAttendanceLocally(id, name);
 }
 
 function stopScanner() {

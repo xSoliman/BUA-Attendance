@@ -118,16 +118,16 @@ def get_headers(spreadsheet_id: str, sheet_name: str) -> list[str]:
     Retrieve column headers from row 1 of a specific sheet, filtered for attendance columns.
     
     This function fetches the header row (row 1) from the specified sheet and returns
-    only the headers starting from column D (index 3) onwards. These columns represent
-    attendance columns (e.g., "Week 1", "Week 2", etc.), while columns A-C typically
-    contain student information (ID, Name, Email).
+    only the headers starting from column C (index 2) onwards. These columns represent
+    attendance columns (e.g., "Week 1", "Week 2", etc.), while columns A-B typically
+    contain student information (ID, Name).
     
     Args:
         spreadsheet_id: The unique identifier from the Google Sheet URL
         sheet_name: The name of the specific sheet/tab to read from
         
     Returns:
-        List of column header names starting from column D onwards.
+        List of column header names starting from column C onwards.
         Empty strings in the header row are filtered out.
         
     Raises:
@@ -148,9 +148,15 @@ def get_headers(spreadsheet_id: str, sheet_name: str) -> list[str]:
     # Get all values from row 1 (header row)
     header_row = worksheet.row_values(1)
     
-    # Filter headers starting from column D (index 3) onwards
-    # Also filter out empty strings
-    attendance_headers = [header for header in header_row[3:] if header.strip()]
+    # Filter headers starting from column C (index 2) onwards
+    # This accommodates sheets with just ID and Name in columns A-B
+    # Also filter out empty strings, but keep headers that have any content
+    attendance_headers = []
+    for header in header_row[2:]:  # Changed from [3:] to [2:] to include column C
+        # Strip whitespace and check if there's any content
+        cleaned_header = header.strip() if isinstance(header, str) else str(header).strip()
+        if cleaned_header:  # Only add non-empty headers
+            attendance_headers.append(cleaned_header)
     
     return attendance_headers
 

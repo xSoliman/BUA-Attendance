@@ -13,10 +13,10 @@ Usage:
 Example:
     python generate_qr.py students.csv
 
-CSV Format:
-    Student_ID,Name
-    20210001,Ahmed Mohamed
-    20210002,Sara Ali
+CSV Format (supports both column name formats):
+    ID,Name                    OR    Student_ID,Name
+    20210001,Ahmed Mohamed           20210001,Ahmed Mohamed
+    20210002,Sara Ali                20210002,Sara Ali
 """
 
 import sys
@@ -40,12 +40,13 @@ def create_output_directory(output_dir="output"):
         print(f"Created output directory: {output_dir}")
 
 
-def generate_qr_code(student_id):
+def generate_qr_code(student_id, student_name=None):
     """
-    Generate a QR code image for a student ID.
+    Generate a QR code image for a student.
     
     Args:
         student_id: The student's unique identifier
+        student_name: The student's name (optional, for enhanced QR data)
         
     Returns:
         PIL.Image: QR code image
@@ -60,8 +61,14 @@ def generate_qr_code(student_id):
         border=4,  # Border size in boxes
     )
     
-    # Add student ID data to QR code
-    qr.add_data(str(student_id))
+    # Add student data to QR code
+    # Format: "Name - ID" if name provided, otherwise just ID
+    if student_name:
+        qr_data = f"{student_name} - {student_id}"
+    else:
+        qr_data = str(student_id)
+    
+    qr.add_data(qr_data)
     qr.make(fit=True)
     
     # Create image
@@ -112,7 +119,7 @@ def add_footer_to_image(qr_image, student_name, student_id):
             font = ImageFont.load_default()
     
     # Footer text
-    footer_text = f"Name: {student_name} | ID: {student_id}"
+    footer_text = f"{student_name} | ID: {student_id}"
     
     # Calculate text position (centered)
     bbox = draw.textbbox((0, 0), footer_text, font=font)
@@ -152,20 +159,30 @@ def process_csv(csv_file_path, output_dir="output"):
         sys.exit(1)
     
     # Validate required columns
-    required_columns = ['Student_ID', 'Name']
-    missing_columns = [col for col in required_columns if col not in df.columns]
-    
-    if missing_columns:
-        print(f"Error: CSV file is missing required columns: {missing_columns}")
-        print(f"Required columns: {required_columns}")
+    # Support both 'Student_ID' and 'ID' for the ID column
+    id_column = None
+    if 'Student_ID' in df.columns:
+        id_column = 'Student_ID'
+    elif 'ID' in df.columns:
+        id_column = 'ID'
+    else:
+        print(f"Error: CSV file is missing ID column")
+        print(f"Required: 'Student_ID' or 'ID'")
         print(f"Found columns: {list(df.columns)}")
         sys.exit(1)
+    
+    if 'Name' not in df.columns:
+        print(f"Error: CSV file is missing 'Name' column")
+        print(f"Found columns: {list(df.columns)}")
+        sys.exit(1)
+    
+    print(f"Using column '{id_column}' for student IDs")
     
     # Generate QR codes for each student
     print(f"Generating QR codes for {len(df)} students...")
     
     for index, row in df.iterrows():
-        student_id = str(row['Student_ID']).strip()
+        student_id = str(row[id_column]).strip()
         student_name = str(row['Name']).strip()
         
         # Skip empty rows
@@ -173,8 +190,8 @@ def process_csv(csv_file_path, output_dir="output"):
             continue
         
         try:
-            # Generate QR code
-            qr_image = generate_qr_code(student_id)
+            # Generate QR code with name and ID
+            qr_image = generate_qr_code(student_id, student_name)
             
             # Add footer with student information
             final_image = add_footer_to_image(qr_image, student_name, student_id)
@@ -200,10 +217,10 @@ def main():
         print("Usage: python generate_qr.py <csv_file_path>")
         print("\nExample:")
         print("  python generate_qr.py students.csv")
-        print("\nCSV Format:")
-        print("  Student_ID,Name")
-        print("  20210001,Ahmed Mohamed")
-        print("  20210002,Sara Ali")
+        print("\nCSV Format (supports both):")
+        print("  ID,Name                    OR    Student_ID,Name")
+        print("  20210001,Ahmed Mohamed           20210001,Ahmed Mohamed")
+        print("  20210002,Sara Ali                20210002,Sara Ali")
         sys.exit(1)
     
     csv_file_path = sys.argv[1]
