@@ -349,8 +349,9 @@ function downloadScannedList() {
         content += `${index + 1}. ${displayText} - ${student.displayTime}\n`;
     });
     
-    // Create and download file
-    const blob = new Blob([content], { type: 'text/plain' });
+    // Create and download file with UTF-8 BOM for proper Arabic text support
+    const BOM = '\uFEFF'; // UTF-8 BOM (Byte Order Mark)
+    const blob = new Blob([BOM + content], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
