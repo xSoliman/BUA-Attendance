@@ -510,12 +510,17 @@ function processStudentId(qrData) {
     // Parse QR data to extract name and ID
     const { name, id } = parseQRData(qrData);
     
+    // Update scanner status to scanning
+    updateScannerStatus('scanning', 'Scanning...');
+    
     // Check scan delay (2 seconds between scans) - ALWAYS check first
     const now = Date.now();
     const timeSinceLastScan = now - lastScanTime;
     
     if (timeSinceLastScan < SCAN_DELAY) {
         // Silently ignore - scanner is in cooldown period
+        updateScannerStatus('cooldown', 'Please wait...');
+        setTimeout(() => updateScannerStatus('ready', 'Ready to scan'), 1000);
         return;
     }
     
@@ -529,12 +534,59 @@ function processStudentId(qrData) {
     // Check if already in cooldown (scanned in last 30 seconds)
     if (checkCooldown(id)) {
         const displayText = name ? `${name} already scanned` : 'Already Scanned';
+        updateScannerStatus('duplicate', displayText);
         showToast(displayText, 'warning');
+        
+        // Return to ready state after 2 seconds
+        setTimeout(() => updateScannerStatus('ready', 'Ready to scan'), 2000);
         return;
     }
     
     // Record locally (instant, no backend call)
     recordAttendanceLocally(id, name);
+    
+    // Show success state
+    const successText = name ? `✓ ${name}` : `✓ Saved`;
+    updateScannerStatus('success', successText);
+    
+    // Return to ready state after 2 seconds
+    setTimeout(() => updateScannerStatus('ready', 'Ready to scan'), 2000);
+}
+
+function updateScannerStatus(state, message) {
+    const statusElement = document.getElementById('scanner-status');
+    if (!statusElement) return;
+    
+    // Remove all state classes
+    statusElement.className = 'scanner-status';
+    
+    // Add new state class
+    statusElement.classList.add(`scanner-status-${state}`);
+    
+    // Update icon and text based on state
+    const iconSpan = statusElement.querySelector('.status-icon');
+    const textSpan = statusElement.querySelector('.status-text');
+    
+    if (iconSpan && textSpan) {
+        switch(state) {
+            case 'ready':
+                iconSpan.textContent = '📷';
+                break;
+            case 'scanning':
+                iconSpan.textContent = '🔍';
+                break;
+            case 'success':
+                iconSpan.textContent = '✅';
+                break;
+            case 'duplicate':
+                iconSpan.textContent = '⚠️';
+                break;
+            case 'cooldown':
+                iconSpan.textContent = '⏳';
+                break;
+        }
+        textSpan.textContent = message;
+    }
 }
 
 function stopScanner() {

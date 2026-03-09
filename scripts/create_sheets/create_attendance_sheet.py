@@ -126,26 +126,41 @@ def create_attendance_sheet(students_df, output_file, sections):
     # Get ID column name
     id_column = 'ID' if 'ID' in students_df.columns else 'Student_ID'
     
+    # Define alternating row colors
+    color1 = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")  # White
+    color2 = PatternFill(start_color="F2F2F2", end_color="F2F2F2", fill_type="solid")  # Light gray
+    
     # Write student data
     for idx, (_, student) in enumerate(students_df.iterrows(), start=2):
         row = idx
         
+        # Determine row color (alternate between white and light gray)
+        row_fill = color1 if (row % 2 == 0) else color2
+        
         # ID
-        ws.cell(row=row, column=1).value = int(student[id_column])
-        ws.cell(row=row, column=1).alignment = Alignment(horizontal="center", vertical="bottom")
+        id_cell = ws.cell(row=row, column=1)
+        id_cell.value = int(student[id_column])
+        id_cell.alignment = Alignment(horizontal="center", vertical="bottom")
+        id_cell.fill = row_fill
         
         # Name
         if 'Name' in students_df.columns:
-            ws.cell(row=row, column=2).value = str(student['Name'])
-            ws.cell(row=row, column=2).alignment = Alignment(horizontal="center", vertical="bottom")
+            name_cell = ws.cell(row=row, column=2)
+            name_cell.value = str(student['Name'])
+            name_cell.alignment = Alignment(horizontal="center", vertical="bottom")
+            name_cell.fill = row_fill
         
         # Section
-        ws.cell(row=row, column=3).value = str(student['Section'])
-        ws.cell(row=row, column=3).alignment = Alignment(horizontal="center", vertical="bottom")
+        section_cell = ws.cell(row=row, column=3)
+        section_cell.value = str(student['Section'])
+        section_cell.alignment = Alignment(horizontal="center", vertical="bottom")
+        section_cell.fill = row_fill
         
         # Week columns (empty)
         for col in range(4, 14):
-            ws.cell(row=row, column=col).alignment = Alignment(horizontal="center", vertical="bottom")
+            week_cell = ws.cell(row=row, column=col)
+            week_cell.alignment = Alignment(horizontal="center", vertical="bottom")
+            week_cell.fill = row_fill
         
         # Total Attendance column (column 14) - Formula to count P, p, or 1
         # Formula: SUMPRODUCT((UPPER(D2:M2)="P")+(D2:M2="1"))
@@ -157,6 +172,7 @@ def create_attendance_sheet(students_df, output_file, sections):
         total_cell.value = formula
         total_cell.alignment = Alignment(horizontal="center", vertical="bottom")
         total_cell.font = Font(bold=True)
+        total_cell.fill = row_fill
     
     # Set column widths (matching sampleOutput.xlsx)
     ws.column_dimensions['A'].width = 13.0   # ID
@@ -183,38 +199,42 @@ def create_attendance_sheet(students_df, output_file, sections):
 
 def main():
     """Main entry point for the attendance sheet generator."""
-    if len(sys.argv) < 3:
+    if len(sys.argv) < 4:
         print("Attendance Sheet Generator")
         print("=" * 60)
-        print("\nUsage: python create_attendance_sheet.py <sheet_name> <section1> <section2> ...")
+        print("\nUsage: python create_attendance_sheet.py <input_sheet> <output_name> <section1> <section2> ...")
         print("\nExamples:")
-        print("  python create_attendance_sheet.py sampleInput A1")
-        print("  python create_attendance_sheet.py AI-Students A1 A2 B7")
-        print("  python create_attendance_sheet.py AS-Students A1 A2 A3 A4 A5")
+        print("  python create_attendance_sheet.py sampleInput \"Attendance Sheet\" A1")
+        print("  python create_attendance_sheet.py AI-Students \"Logic Design\" A1 A2 B7")
+        print("  python create_attendance_sheet.py AS-Students \"Data Structures\" A1 A2 A3 A4 A5")
+        print("\nArguments:")
+        print("  input_sheet  - Name of input Excel file (without .xlsx)")
+        print("  output_name  - Name for output file (will be saved as <output_name>.xlsx)")
+        print("  sections     - One or more section codes (e.g., A1, A2, B7)")
         print("\nInput:")
-        print("  Reads from: input/<sheet_name>.xlsx")
+        print("  Reads from: input/<input_sheet>.xlsx")
         print("\nOutput:")
-        print("  Creates: output/attendance_<sections>.xlsx")
-        print("  Example: output/attendance_A1_A2_B7.xlsx")
+        print("  Creates: output/<output_name>.xlsx")
+        print("  Example: output/Logic Design.xlsx")
         sys.exit(1)
     
-    # Get sheet name and sections from command line arguments
-    sheet_name = sys.argv[1]
-    sections = [arg.upper() for arg in sys.argv[2:]]
+    # Get input sheet name, output name, and sections from command line arguments
+    input_sheet = sys.argv[1]
+    output_name = sys.argv[2]
+    sections = [arg.upper() for arg in sys.argv[3:]]
     
     # Setup paths
     script_dir = get_script_directory()
     input_dir = os.path.join(script_dir, "input")
-    input_file = os.path.join(input_dir, f"{sheet_name}.xlsx")
+    input_file = os.path.join(input_dir, f"{input_sheet}.xlsx")
     output_dir = os.path.join(script_dir, "output")
     
     # Create output directory if it doesn't exist
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     
-    # Create output filename
-    sections_str = "_".join(sections)
-    output_file = os.path.join(output_dir, f"attendance_{sections_str}.xlsx")
+    # Create output filename (use provided name directly)
+    output_file = os.path.join(output_dir, f"{output_name}.xlsx")
     
     print("=" * 60)
     print("Attendance Sheet Generator")

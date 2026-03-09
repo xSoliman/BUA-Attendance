@@ -5,35 +5,35 @@ Creates attendance sheets for specific sections by filtering students from the i
 ## Usage
 
 ```bash
-python create_attendance_sheet.py <sheet_name> <section1> <section2> ...
+python create_attendance_sheet.py <input_sheet> <output_name> <section1> <section2> ...
 ```
 
 ## Examples
 
 Generate attendance sheet for section A1 from sampleInput.xlsx:
 ```bash
-python create_attendance_sheet.py sampleInput A1
+python create_attendance_sheet.py sampleInput "Attendance Sheet" A1
 ```
 
 Generate attendance sheet for multiple sections from AI-Students.xlsx:
 ```bash
-python create_attendance_sheet.py AI-Students A1 A2 B1
+python create_attendance_sheet.py AI-Students "Logic Design" A1 A2 B1
 ```
 
 Generate attendance sheet for all sections in a group from AS-Students.xlsx:
 ```bash
-python create_attendance_sheet.py AS-Students A1 A2 A3 A4
+python create_attendance_sheet.py AS-Students "Data Structures" A1 A2 A3 A4
 ```
 
 ## Input
 
-- **Location**: `input/<sheet_name>.xlsx`
+- **Location**: `input/<input_sheet>.xlsx`
 - **Format**: Excel file with multiple sheets (Group A, Group B, etc.)
 - **Required columns**: ID, Name, Section
 
 ## Output
 
-- **Location**: `output/attendance_<sections>.xlsx`
+- **Location**: `output/<output_name>.xlsx`
 - **Format**: Matches `sampleOutput.xlsx` exactly
   - Headers: ID, Name, Section, Week 1-10, Total Attendance
   - Blue header background (#0F45A8)
@@ -41,17 +41,18 @@ python create_attendance_sheet.py AS-Students A1 A2 A3 A4
   - Frozen first row
   - Proper column widths
   - Auto-calculated Total Attendance column
+  - Alternating row colors (white and light gray)
 
 ## Examples
 
 ```bash
 # Single section from sampleInput.xlsx
-python create_attendance_sheet.py sampleInput A1
-# Output: output/attendance_A1.xlsx
+python create_attendance_sheet.py sampleInput "Attendance Sheet" A1
+# Output: output/Attendance Sheet.xlsx
 
 # Multiple sections from AI-Students.xlsx
-python create_attendance_sheet.py AI-Students A1 A2 B1
-# Output: output/attendance_A1_A2_B1.xlsx
+python create_attendance_sheet.py AI-Students "Logic Design" A1 A2 B1
+# Output: output/Logic Design.xlsx
 ```
 
 ## Requirements
