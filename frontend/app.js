@@ -346,7 +346,12 @@ function downloadScannedList() {
         const displayText = student.name 
             ? `${student.name} - ${student.id}` 
             : student.id;
-        content += `${index + 1}. ${displayText} - ${student.displayTime}\n`;
+        
+        // Convert timestamp to 24-hour format for download
+        const scanTime = new Date(student.timestamp);
+        const time24h = scanTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        
+        content += `${index + 1}. ${displayText} - ${time24h}\n`;
     });
     
     // Create and download file with UTF-8 BOM for proper Arabic text support
