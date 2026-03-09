@@ -701,15 +701,9 @@ function initScannerPage() {
             sessionContext.columnName = e.target.value;
             updateScannerButtons();
             
-            // If both course and week are selected, initialize scanner
+            // If both course and week are selected, save session context
             if (sessionContext.sheetName && sessionContext.columnName) {
-                // Save session context
                 saveSessionContext(sessionContext);
-                
-                // Initialize scanner if not already initialized
-                if (!qrScanner) {
-                    initializeScanner();
-                }
             }
         });
     }
@@ -726,6 +720,9 @@ function initScannerPage() {
     
     // Load previously scanned students
     loadScannedStudents();
+    
+    // Initialize scanner immediately on page load
+    initializeScanner();
     
     // Start periodic cooldown cleanup (every 5 seconds)
     const cleanupInterval = setInterval(cleanupCooldown, 5000);
