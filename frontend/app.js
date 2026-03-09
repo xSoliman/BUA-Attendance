@@ -194,10 +194,6 @@ function recordAttendanceLocally(studentId, studentName = null) {
     // Update UI
     updateScannedList();
     
-    // Show toast with name if available
-    const displayText = studentName ? `✓ ${studentName}` : `✓ ${studentId}`;
-    showToast(displayText, 'success');
-    
     // Save to localStorage for persistence
     saveScannedStudents();
 }
@@ -535,7 +531,6 @@ function processStudentId(qrData) {
     if (checkCooldown(id)) {
         const displayText = name ? `${name} already scanned` : 'Already Scanned';
         updateScannerStatus('duplicate', displayText);
-        showToast(displayText, 'warning');
         
         // Return to ready state after 2 seconds
         setTimeout(() => updateScannerStatus('ready', 'Ready to scan'), 2000);
