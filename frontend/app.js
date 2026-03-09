@@ -335,23 +335,20 @@ function downloadScannedList() {
         return;
     }
     
-    // Create text content
+    // Create text content with general timestamp
     let content = `QR Attendance System - Scanned Students\n`;
     content += `Session: ${sessionContext.sheetName} - ${sessionContext.columnName}\n`;
-    content += `Date: ${new Date().toLocaleString()}\n`;
+    content += `Date: ${new Date().toLocaleString('en-US', { hour12: true })}\n`;
     content += `Total Students: ${scannedStudents.length}\n`;
     content += `\n${'='.repeat(50)}\n\n`;
     
+    // List students without individual timestamps
     scannedStudents.forEach((student, index) => {
         const displayText = student.name 
             ? `${student.name} - ${student.id}` 
             : student.id;
         
-        // Convert timestamp to 24-hour format for download
-        const scanTime = new Date(student.timestamp);
-        const time24h = scanTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        
-        content += `${index + 1}. ${displayText} - ${time24h}\n`;
+        content += `${index + 1}. ${displayText}\n`;
     });
     
     // Create and download file with UTF-8 BOM for proper Arabic text support
