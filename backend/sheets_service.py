@@ -122,8 +122,12 @@ def get_headers(spreadsheet_id: str, sheet_name: str) -> list[str]:
     - If column C is "Section": Returns headers from column D onwards (ID, Name, Section, Week 1, ...)
     - Otherwise: Returns headers from column C onwards (ID, Name, Week 1, ...) for backward compatibility
     
+    The function filters out:
+    - Empty headers
+    - "Total Attendance" column (used for summary, not for marking attendance)
+    
     This ensures compatibility with both old sheets (without Section column) and new sheets
-    (with Section column).
+    (with Section column and Total Attendance column).
     
     Args:
         spreadsheet_id: The unique identifier from the Google Sheet URL
@@ -131,7 +135,7 @@ def get_headers(spreadsheet_id: str, sheet_name: str) -> list[str]:
         
     Returns:
         List of attendance column header names (e.g., "Week 1", "Week 2", etc.).
-        Empty strings in the header row are filtered out.
+        Empty strings and "Total Attendance" are filtered out.
         
     Raises:
         gspread.exceptions.APIError: If there's an API error accessing the spreadsheet
@@ -161,12 +165,14 @@ def get_headers(spreadsheet_id: str, sheet_name: str) -> list[str]:
             start_index = 3  # Skip Section column, start from column D
     
     # Filter headers starting from the determined column onwards
-    # Also filter out empty strings, but keep headers that have any content
+    # Also filter out empty strings and "Total Attendance" column
     attendance_headers = []
     for header in header_row[start_index:]:
         # Strip whitespace and check if there's any content
         cleaned_header = header.strip() if isinstance(header, str) else str(header).strip()
-        if cleaned_header:  # Only add non-empty headers
+        
+        # Skip empty headers and "Total Attendance" column
+        if cleaned_header and cleaned_header.lower() != "total attendance":
             attendance_headers.append(cleaned_header)
     
     return attendance_headers
