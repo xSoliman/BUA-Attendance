@@ -35,11 +35,12 @@ python create_attendance_sheet.py AS-Students A1 A2 A3 A4
 
 - **Location**: `output/attendance_<sections>.xlsx`
 - **Format**: Matches `sampleOutput.xlsx` exactly
-  - Headers: ID, Name, Section, Week 1-10
+  - Headers: ID, Name, Section, Week 1-10, Total Attendance
   - Blue header background (#0F45A8)
   - White header text
   - Frozen first row
   - Proper column widths
+  - Auto-calculated Total Attendance column
 
 ## Examples
 
@@ -65,3 +66,8 @@ pip install pandas openpyxl
 - Students are automatically sorted by Section, then by ID
 - The script searches all sheets in the input file
 - Empty week columns are ready for attendance marking
+- Total Attendance column automatically counts 'P', 'p', or '1' values
+- Formula used: `=SUMPRODUCT((UPPER(D2:M2)="P")+(D2:M2="1"))`
+  - Counts 'P' or 'p' (case-insensitive)
+  - Counts '1' (numeric attendance marker)
+  - Updates automatically when attendance is marked

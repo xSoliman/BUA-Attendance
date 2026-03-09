@@ -94,7 +94,7 @@ def load_students(input_file, sections):
 
 def create_attendance_sheet(students_df, output_file, sections):
     """
-    Create attendance sheet matching sampleOutput.xlsx format.
+    Create attendance sheet matching sampleOutput.xlsx format with Total Attendance column.
     
     Args:
         students_df: DataFrame with student data
@@ -106,9 +106,9 @@ def create_attendance_sheet(students_df, output_file, sections):
     ws = wb.active
     ws.title = "Sheet1"
     
-    # Create headers
+    # Create headers (including Total Attendance)
     headers = ['ID', 'Name', 'Section', 'Week 1', 'Week 2', 'Week 3', 'Week 4', 
-               'Week 5', 'Week 6', 'Week 7', 'Week 8', 'Week 9', 'Week 10']
+               'Week 5', 'Week 6', 'Week 7', 'Week 8', 'Week 9', 'Week 10', 'Total Attendance']
     
     # Header styling (matching sampleOutput.xlsx)
     header_fill = PatternFill(start_color="0F45A8", end_color="0F45A8", fill_type="solid")
@@ -146,6 +146,17 @@ def create_attendance_sheet(students_df, output_file, sections):
         # Week columns (empty)
         for col in range(4, 14):
             ws.cell(row=row, column=col).alignment = Alignment(horizontal="center", vertical="bottom")
+        
+        # Total Attendance column (column 14) - Formula to count P, p, or 1
+        # Formula: SUMPRODUCT((UPPER(D2:M2)="P")+(D2:M2="1"))
+        week_start_col = 'D'  # Week 1 starts at column D
+        week_end_col = 'M'    # Week 10 ends at column M
+        formula = f'=SUMPRODUCT((UPPER({week_start_col}{row}:{week_end_col}{row})="P")+({week_start_col}{row}:{week_end_col}{row}=1))'
+        
+        total_cell = ws.cell(row=row, column=14)
+        total_cell.value = formula
+        total_cell.alignment = Alignment(horizontal="center", vertical="bottom")
+        total_cell.font = Font(bold=True)
     
     # Set column widths (matching sampleOutput.xlsx)
     ws.column_dimensions['A'].width = 13.0   # ID
@@ -156,6 +167,9 @@ def create_attendance_sheet(students_df, output_file, sections):
     for col in range(4, 14):
         ws.column_dimensions[get_column_letter(col)].width = 13.0
     
+    # Total Attendance column
+    ws.column_dimensions['N'].width = 18.0
+    
     # Freeze first row
     ws.freeze_panes = 'A2'
     
@@ -164,6 +178,7 @@ def create_attendance_sheet(students_df, output_file, sections):
     print(f"\n✓ Created attendance sheet: {output_file}")
     print(f"  Sections: {', '.join(sections)}")
     print(f"  Students: {len(students_df)}")
+    print(f"  Total Attendance column added with auto-calculation")
 
 
 def main():
