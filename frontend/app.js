@@ -6,6 +6,7 @@ const COOLDOWN_DURATION = 30000; // 30 seconds in milliseconds
 const TOAST_DURATION = 3000; // 3 seconds
 const REQUEST_TIMEOUT = 10000; // 10 seconds timeout for requests
 const SCAN_DELAY = 2000; // 2 seconds delay between scans
+const SEMESTER_START_DATE = new Date('2026-02-07'); // First day of Week 1: February 7, 2026
 
 // State Management
 let sessionContext = {
@@ -20,6 +21,20 @@ let isProcessing = false; // Flag to prevent concurrent scans
 let processingQueue = new Set(); // Track IDs being processed
 let scannedStudents = []; // Store scanned student IDs with timestamps
 let lastScanTime = 0; // Track last scan time for delay
+
+// Calculate current week based on semester start date
+function getCurrentWeek() {
+    const now = new Date();
+    const diffTime = now - SEMESTER_START_DATE;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const weekNumber = Math.floor(diffDays / 7) + 1; // +1 because week 1 starts on day 0
+    
+    // Return week number if it's between 1 and 14, otherwise return null
+    if (weekNumber >= 1 && weekNumber <= 14) {
+        return weekNumber;
+    }
+    return null;
+}
 
 // Scanner Status Management
 function updateScannerStatus(status, message) {
@@ -708,10 +723,24 @@ function initScannerPage() {
             
             const columns = await fetchColumns(config.spreadsheetId, sheetName);
             columnSelect.innerHTML = '<option value="">Select a week</option>';
+            
+            const currentWeek = getCurrentWeek();
+            
             columns.forEach(column => {
                 const option = document.createElement('option');
                 option.value = column;
-                option.textContent = column;
+                
+                // Check if this is the current week
+                const weekMatch = column.match(/Week (\d+)/i);
+                const isCurrentWeek = weekMatch && currentWeek && parseInt(weekMatch[1]) === currentWeek;
+                
+                if (isCurrentWeek) {
+                    option.textContent = `${column} ⭐ (Current Week)`;
+                    option.style.fontWeight = 'bold';
+                } else {
+                    option.textContent = column;
+                }
+                
                 columnSelect.appendChild(option);
             });
         });

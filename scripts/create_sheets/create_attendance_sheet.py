@@ -130,6 +130,14 @@ def create_attendance_sheet(students_df, output_file, sections):
     color1 = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")  # White
     color2 = PatternFill(start_color="F2F2F2", end_color="F2F2F2", fill_type="solid")  # Light gray
     
+    # Define border style (thin gray borders)
+    thin_border = Border(
+        left=Side(style='thin', color='D3D3D3'),
+        right=Side(style='thin', color='D3D3D3'),
+        top=Side(style='thin', color='D3D3D3'),
+        bottom=Side(style='thin', color='D3D3D3')
+    )
+    
     # Write student data
     for idx, (_, student) in enumerate(students_df.iterrows(), start=2):
         row = idx
@@ -142,6 +150,7 @@ def create_attendance_sheet(students_df, output_file, sections):
         id_cell.value = int(student[id_column])
         id_cell.alignment = Alignment(horizontal="center", vertical="bottom")
         id_cell.fill = row_fill
+        id_cell.border = thin_border
         
         # Name
         if 'Name' in students_df.columns:
@@ -149,18 +158,21 @@ def create_attendance_sheet(students_df, output_file, sections):
             name_cell.value = str(student['Name'])
             name_cell.alignment = Alignment(horizontal="center", vertical="bottom")
             name_cell.fill = row_fill
+            name_cell.border = thin_border
         
         # Section
         section_cell = ws.cell(row=row, column=3)
         section_cell.value = str(student['Section'])
         section_cell.alignment = Alignment(horizontal="center", vertical="bottom")
         section_cell.fill = row_fill
+        section_cell.border = thin_border
         
         # Week columns (empty)
         for col in range(4, 14):
             week_cell = ws.cell(row=row, column=col)
             week_cell.alignment = Alignment(horizontal="center", vertical="bottom")
             week_cell.fill = row_fill
+            week_cell.border = thin_border
         
         # Total Attendance column (column 14) - Formula to count P, p, or 1
         # Formula: SUMPRODUCT((UPPER(D2:M2)="P")+(D2:M2="1"))
@@ -173,6 +185,32 @@ def create_attendance_sheet(students_df, output_file, sections):
         total_cell.alignment = Alignment(horizontal="center", vertical="bottom")
         total_cell.font = Font(bold=True)
         total_cell.fill = row_fill
+        total_cell.border = thin_border
+    
+    # Add extra empty rows (10 rows) with same formatting for manual entries
+    last_student_row = len(students_df) + 1  # +1 because we start from row 2
+    extra_rows = 10
+    
+    for extra_idx in range(1, extra_rows + 1):
+        row = last_student_row + extra_idx
+        
+        # Determine row color (continue alternating pattern)
+        row_fill = color1 if (row % 2 == 0) else color2
+        
+        # Apply formatting to all columns (ID, Name, Section, Weeks, Total)
+        for col in range(1, 15):  # Columns A through N
+            cell = ws.cell(row=row, column=col)
+            cell.alignment = Alignment(horizontal="center", vertical="bottom")
+            cell.fill = row_fill
+            cell.border = thin_border
+            
+            # Add formula to Total Attendance column
+            if col == 14:
+                week_start_col = 'D'
+                week_end_col = 'M'
+                formula = f'=SUMPRODUCT((UPPER({week_start_col}{row}:{week_end_col}{row})="P")+({week_start_col}{row}:{week_end_col}{row}=1))'
+                cell.value = formula
+                cell.font = Font(bold=True)
     
     # Set column widths (matching sampleOutput.xlsx)
     ws.column_dimensions['A'].width = 13.0   # ID
@@ -186,14 +224,16 @@ def create_attendance_sheet(students_df, output_file, sections):
     # Total Attendance column
     ws.column_dimensions['N'].width = 18.0
     
-    # Freeze first row
-    ws.freeze_panes = 'A2'
+    # Freeze first row and first 3 columns (ID, Name, Section)
+    # D2 means freeze everything above row 2 and to the left of column D
+    ws.freeze_panes = 'D2'
     
     # Save workbook
     wb.save(output_file)
     print(f"\n✓ Created attendance sheet: {output_file}")
     print(f"  Sections: {', '.join(sections)}")
     print(f"  Students: {len(students_df)}")
+    print(f"  Extra rows: {extra_rows} (for manual entries)")
     print(f"  Total Attendance column added with auto-calculation")
 
 
