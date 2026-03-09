@@ -249,6 +249,9 @@ function updateScannedList() {
     // Update count
     countSpan.textContent = scannedStudents.length;
     
+    // Update button states
+    updateScannerButtons();
+    
     // Clear and rebuild list
     if (scannedStudents.length === 0) {
         listContainer.innerHTML = '<p class="empty-message">No students scanned yet</p>';
@@ -340,7 +343,10 @@ function downloadScannedList() {
     content += `\n${'='.repeat(50)}\n\n`;
     
     scannedStudents.forEach((student, index) => {
-        content += `${index + 1}. ${student.id} - ${student.displayTime}\n`;
+        const displayText = student.name 
+            ? `${student.name} - ${student.id}` 
+            : student.id;
+        content += `${index + 1}. ${displayText} - ${student.displayTime}\n`;
     });
     
     // Create and download file
@@ -545,14 +551,15 @@ function initPage() {
     if (path.includes('config.html')) {
         initConfigPage();
     } else if (path.includes('session.html')) {
-        initSessionPage();
+        // Redirect to scanner.html (session is now merged with scanner)
+        window.location.href = 'scanner.html';
     } else if (path.includes('scanner.html')) {
         initScannerPage();
     } else {
         // Default index.html - redirect based on config
         const config = getStoredConfig();
         if (config && config.spreadsheetId) {
-            window.location.href = 'session.html';
+            window.location.href = 'scanner.html';
         } else {
             window.location.href = 'config.html';
         }
@@ -608,7 +615,7 @@ function initConfigPage() {
                 statusDiv.textContent = 'Configuration saved successfully!';
                 statusDiv.className = 'success';
                 setTimeout(() => {
-                    window.location.href = 'session.html';
+                    window.location.href = 'scanner.html';
                 }, 1500);
             } else {
                 statusDiv.textContent = result.message;
@@ -635,7 +642,7 @@ function initConfigPage() {
     }
 }
 
-function initSessionPage() {
+function initScannerPage() {
     const config = getStoredConfig();
     if (!config) {
         window.location.href = 'config.html';
@@ -644,7 +651,7 @@ function initSessionPage() {
     
     sessionContext.spreadsheetId = config.spreadsheetId;
     
-    // Load sheets
+    // Load sheets for session selection
     fetchSheets(config.spreadsheetId).then(sheets => {
         const select = document.getElementById('course-sheet');
         if (select) {
@@ -669,6 +676,7 @@ function initSessionPage() {
             if (!sheetName) {
                 columnSelect.disabled = true;
                 columnSelect.innerHTML = '<option value="">Select a course first</option>';
+                updateScannerButtons();
                 return;
             }
             
@@ -691,17 +699,18 @@ function initSessionPage() {
     if (columnSelect) {
         columnSelect.addEventListener('change', (e) => {
             sessionContext.columnName = e.target.value;
-            updateStartButton();
-        });
-    }
-    
-    // Start scanner button
-    const startBtn = document.getElementById('start-scanner');
-    if (startBtn) {
-        startBtn.addEventListener('click', () => {
-            // Save session context before navigating
-            saveSessionContext(sessionContext);
-            window.location.href = 'scanner.html';
+            updateScannerButtons();
+            
+            // If both course and week are selected, initialize scanner
+            if (sessionContext.sheetName && sessionContext.columnName) {
+                // Save session context
+                saveSessionContext(sessionContext);
+                
+                // Initialize scanner if not already initialized
+                if (!qrScanner) {
+                    initializeScanner();
+                }
+            }
         });
     }
     
@@ -714,43 +723,9 @@ function initSessionPage() {
             }
         });
     }
-}
-
-function updateStartButton() {
-    const startBtn = document.getElementById('start-scanner');
-    if (startBtn) {
-        startBtn.disabled = !(sessionContext.sheetName && sessionContext.columnName);
-    }
-}
-
-function initScannerPage() {
-    const config = getStoredConfig();
-    if (!config) {
-        window.location.href = 'config.html';
-        return;
-    }
-    
-    // Load session context from sessionStorage
-    const savedSession = getSessionContext();
-    if (savedSession) {
-        sessionContext = savedSession;
-    } else {
-        // No session context, redirect to session page
-        window.location.href = 'session.html';
-        return;
-    }
-    
-    // Display session info
-    const courseSpan = document.getElementById('current-course');
-    const weekSpan = document.getElementById('current-week');
-    if (courseSpan) courseSpan.textContent = sessionContext.sheetName || '-';
-    if (weekSpan) weekSpan.textContent = sessionContext.columnName || '-';
     
     // Load previously scanned students
     loadScannedStudents();
-    
-    // Initialize scanner
-    initializeScanner();
     
     // Start periodic cooldown cleanup (every 5 seconds)
     const cleanupInterval = setInterval(cleanupCooldown, 5000);
@@ -797,52 +772,21 @@ function initScannerPage() {
             }
         });
     }
+}
+
+function updateScannerButtons() {
+    const sessionReady = sessionContext.sheetName && sessionContext.columnName;
     
-    // Change session button
-    const changeBtn = document.getElementById('change-session');
-    if (changeBtn) {
-        changeBtn.addEventListener('click', async () => {
-            // Warn user about clearing session data
-            const hasScannedData = scannedStudents.length > 0;
-            let confirmMessage = 'Change to a different session?';
-            
-            if (hasScannedData) {
-                confirmMessage = `You have ${scannedStudents.length} scanned student(s).\n\n` +
-                                `Changing session will clear this data.\n\n` +
-                                `Continue?`;
-            }
-            
-            if (confirm(confirmMessage)) {
-                // Try to stop scanner (with timeout to prevent blocking)
-                try {
-                    if (qrScanner) {
-                        await Promise.race([
-                            qrScanner.stop().then(() => qrScanner.clear()),
-                            new Promise(resolve => setTimeout(resolve, 1000)) // 1 second timeout
-                        ]);
-                    }
-                } catch (err) {
-                    console.error('Error stopping scanner:', err);
-                    // Continue anyway - don't let scanner errors block navigation
-                }
-                
-                // Clear all session data
-                scannedStudents = [];
-                cooldownCache.clear();
-                processingQueue.clear();
-                isProcessing = false;
-                lastScanTime = 0;
-                qrScanner = null; // Reset scanner reference
-                
-                // Clear session storage
-                sessionStorage.removeItem('scanned-students');
-                sessionStorage.removeItem('qr-attendance-session');
-                
-                // Navigate to session page
-                window.location.href = 'session.html';
-            }
-        });
-    }
+    // Enable/disable buttons based on session readiness
+    const submitManualBtn = document.getElementById('submit-manual');
+    const endSessionBtn = document.getElementById('end-session');
+    const clearScansBtn = document.getElementById('clear-scans');
+    const downloadBtn = document.getElementById('download-txt');
+    
+    if (submitManualBtn) submitManualBtn.disabled = !sessionReady;
+    if (endSessionBtn) endSessionBtn.disabled = !sessionReady || scannedStudents.length === 0;
+    if (clearScansBtn) clearScansBtn.disabled = scannedStudents.length === 0;
+    if (downloadBtn) downloadBtn.disabled = scannedStudents.length === 0;
 }
 
 // Initialize on page load

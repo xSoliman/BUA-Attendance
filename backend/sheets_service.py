@@ -118,16 +118,19 @@ def get_headers(spreadsheet_id: str, sheet_name: str) -> list[str]:
     Retrieve column headers from row 1 of a specific sheet, filtered for attendance columns.
     
     This function fetches the header row (row 1) from the specified sheet and returns
-    only the headers starting from column C (index 2) onwards. These columns represent
-    attendance columns (e.g., "Week 1", "Week 2", etc.), while columns A-B typically
-    contain student information (ID, Name).
+    only the attendance column headers. It automatically detects the sheet structure:
+    - If column C is "Section": Returns headers from column D onwards (ID, Name, Section, Week 1, ...)
+    - Otherwise: Returns headers from column C onwards (ID, Name, Week 1, ...) for backward compatibility
+    
+    This ensures compatibility with both old sheets (without Section column) and new sheets
+    (with Section column).
     
     Args:
         spreadsheet_id: The unique identifier from the Google Sheet URL
         sheet_name: The name of the specific sheet/tab to read from
         
     Returns:
-        List of column header names starting from column C onwards.
+        List of attendance column header names (e.g., "Week 1", "Week 2", etc.).
         Empty strings in the header row are filtered out.
         
     Raises:
@@ -148,11 +151,19 @@ def get_headers(spreadsheet_id: str, sheet_name: str) -> list[str]:
     # Get all values from row 1 (header row)
     header_row = worksheet.row_values(1)
     
-    # Filter headers starting from column C (index 2) onwards
-    # This accommodates sheets with just ID and Name in columns A-B
+    # Determine starting column based on sheet structure
+    # Check if column C (index 2) is "Section" - if so, start from column D (index 3)
+    # Otherwise, start from column C (index 2) for backward compatibility
+    start_index = 2  # Default: column C
+    if len(header_row) > 2:
+        col_c_header = header_row[2].strip().lower() if isinstance(header_row[2], str) else str(header_row[2]).strip().lower()
+        if col_c_header == "section":
+            start_index = 3  # Skip Section column, start from column D
+    
+    # Filter headers starting from the determined column onwards
     # Also filter out empty strings, but keep headers that have any content
     attendance_headers = []
-    for header in header_row[2:]:  # Changed from [3:] to [2:] to include column C
+    for header in header_row[start_index:]:
         # Strip whitespace and check if there's any content
         cleaned_header = header.strip() if isinstance(header, str) else str(header).strip()
         if cleaned_header:  # Only add non-empty headers

@@ -374,6 +374,65 @@ select:disabled {
     background: linear-gradient(90deg, var(--primary) 0%, var(--primary-hover) 100%);
 }
 
+/* ── Session Selection Section (Inline) ───────────────────── */
+.session-selection-section {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
+    margin-bottom: 24px;
+    position: relative;
+}
+
+.session-selection-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary) 0%, var(--primary-hover) 100%);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.session-selection-section h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 16px;
+}
+
+.session-form-inline {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.session-form-inline .form-group {
+    margin-bottom: 0;
+}
+
+.session-form-inline label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    display: block;
+}
+
+.session-form-inline select {
+    width: 100%;
+    font-size: 14px;
+}
+
+@media (max-width: 600px) {
+    .session-form-inline {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+}
+
 /* ── QR Reader ────────────────────────────────────────────── */
 #qr-reader {
     width: 80%;
