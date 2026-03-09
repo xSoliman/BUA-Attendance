@@ -21,6 +21,37 @@ let processingQueue = new Set(); // Track IDs being processed
 let scannedStudents = []; // Store scanned student IDs with timestamps
 let lastScanTime = 0; // Track last scan time for delay
 
+// Scanner Status Management
+function updateScannerStatus(status, message) {
+    const statusElement = document.getElementById('scanner-status');
+    if (!statusElement) return;
+    
+    // Remove all status classes
+    statusElement.classList.remove('ready', 'waiting', 'processing', 'error');
+    
+    // Add new status class and update text
+    statusElement.classList.add(status);
+    statusElement.textContent = message;
+}
+
+function updateLastScanned(studentName, studentId) {
+    const lastScannedElement = document.getElementById('last-scanned');
+    if (!lastScannedElement) return;
+    
+    const displayText = studentName ? studentName : studentId;
+    lastScannedElement.textContent = displayText;
+    
+    // Add highlight animation
+    lastScannedElement.classList.remove('highlight');
+    void lastScannedElement.offsetWidth; // Trigger reflow
+    lastScannedElement.classList.add('highlight');
+    
+    // Remove highlight after animation
+    setTimeout(() => {
+        lastScannedElement.classList.remove('highlight');
+    }, 500);
+}
+
 // Utility Functions
 function parseQRData(qrData) {
     /**
@@ -194,46 +225,32 @@ function recordAttendanceLocally(studentId, studentName = null) {
     // Update UI
     updateScannedList();
     
+    // Update last scanned display
+    updateLastScanned(studentName, studentId);
+    
+    // Show toast with name if available
+    const displayText = studentName ? `✓ ${studentName}` : `✓ ${studentId}`;
+    showToast(displayText, 'success');
+    
     // Save to localStorage for persistence
     saveScannedStudents();
 }
 
 function showScannerCooldown() {
     let countdown = Math.ceil(SCAN_DELAY / 1000);
-    const toastId = `scanner-cooldown-${Date.now()}`;
     
-    // Create countdown toast
-    const container = document.getElementById('toast-container');
-    if (!container) return;
+    // Update scanner status immediately
+    updateScannerStatus('waiting', `Ready in ${countdown}s...`);
     
-    const toast = document.createElement('div');
-    toast.className = 'toast warning';
-    toast.id = toastId;
-    toast.textContent = `Ready in ${countdown}s...`;
-    container.appendChild(toast);
-    
-    // Update countdown every second
     const interval = setInterval(() => {
         countdown--;
         if (countdown > 0) {
-            toast.textContent = `Ready in ${countdown}s...`;
+            updateScannerStatus('waiting', `Ready in ${countdown}s...`);
         } else {
-            toast.textContent = '✓ Ready to scan';
-            toast.className = 'toast success';
-            setTimeout(() => {
-                toast.remove();
-            }, 500);
+            updateScannerStatus('ready', '✓ Ready to scan');
             clearInterval(interval);
         }
     }, 1000);
-    
-    // Remove after delay
-    setTimeout(() => {
-        clearInterval(interval);
-        if (toast.parentNode) {
-            toast.remove();
-        }
-    }, SCAN_DELAY + 500);
 }
 
 function updateScannedList() {
@@ -476,6 +493,9 @@ function initializeScanner() {
     const qrReader = document.getElementById('qr-reader');
     if (!qrReader) return;
     
+    // Set initial scanner status
+    updateScannerStatus('processing', 'Initializing camera...');
+    
     qrScanner = new Html5Qrcode("qr-reader");
     
     const config = {
@@ -488,7 +508,11 @@ function initializeScanner() {
         config,
         onScanSuccess,
         onScanError
-    ).catch(err => {
+    ).then(() => {
+        // Scanner started successfully
+        updateScannerStatus('ready', '✓ Ready to scan');
+    }).catch(err => {
+        updateScannerStatus('error', '✗ Camera access denied');
         showToast('Camera access denied. Please enable camera permissions.', 'error');
         console.error('Scanner error:', err);
     });
@@ -506,17 +530,12 @@ function processStudentId(qrData) {
     // Parse QR data to extract name and ID
     const { name, id } = parseQRData(qrData);
     
-    // Update scanner status to scanning
-    updateScannerStatus('scanning', 'Scanning...');
-    
     // Check scan delay (2 seconds between scans) - ALWAYS check first
     const now = Date.now();
     const timeSinceLastScan = now - lastScanTime;
     
     if (timeSinceLastScan < SCAN_DELAY) {
         // Silently ignore - scanner is in cooldown period
-        updateScannerStatus('cooldown', 'Please wait...');
-        setTimeout(() => updateScannerStatus('ready', 'Ready to scan'), 1000);
         return;
     }
     
@@ -530,58 +549,12 @@ function processStudentId(qrData) {
     // Check if already in cooldown (scanned in last 30 seconds)
     if (checkCooldown(id)) {
         const displayText = name ? `${name} already scanned` : 'Already Scanned';
-        updateScannerStatus('duplicate', displayText);
-        
-        // Return to ready state after 2 seconds
-        setTimeout(() => updateScannerStatus('ready', 'Ready to scan'), 2000);
+        showToast(displayText, 'warning');
         return;
     }
     
     // Record locally (instant, no backend call)
     recordAttendanceLocally(id, name);
-    
-    // Show success state
-    const successText = name ? `✓ ${name}` : `✓ Saved`;
-    updateScannerStatus('success', successText);
-    
-    // Return to ready state after 2 seconds
-    setTimeout(() => updateScannerStatus('ready', 'Ready to scan'), 2000);
-}
-
-function updateScannerStatus(state, message) {
-    const statusElement = document.getElementById('scanner-status');
-    if (!statusElement) return;
-    
-    // Remove all state classes
-    statusElement.className = 'scanner-status';
-    
-    // Add new state class
-    statusElement.classList.add(`scanner-status-${state}`);
-    
-    // Update icon and text based on state
-    const iconSpan = statusElement.querySelector('.status-icon');
-    const textSpan = statusElement.querySelector('.status-text');
-    
-    if (iconSpan && textSpan) {
-        switch(state) {
-            case 'ready':
-                iconSpan.textContent = '📷';
-                break;
-            case 'scanning':
-                iconSpan.textContent = '🔍';
-                break;
-            case 'success':
-                iconSpan.textContent = '✅';
-                break;
-            case 'duplicate':
-                iconSpan.textContent = '⚠️';
-                break;
-            case 'cooldown':
-                iconSpan.textContent = '⏳';
-                break;
-        }
-        textSpan.textContent = message;
-    }
 }
 
 function stopScanner() {

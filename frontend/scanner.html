@@ -44,14 +44,20 @@
                 <div id="loading-indicator" class="hidden">Loading...</div>
             </div>
 
+            <!-- Scanner Status Bar -->
+            <div class="scanner-status-bar">
+                <div class="scanner-state">
+                    <span class="status-label">Scanner:</span>
+                    <span id="scanner-status" class="status-value">Initializing...</span>
+                </div>
+                <div class="last-scanned">
+                    <span class="status-label">Last Scanned:</span>
+                    <span id="last-scanned" class="status-value">—</span>
+                </div>
+            </div>
+
             <!-- QR Scanner -->
             <div class="scanner-container">
-                <!-- Scanner Status Indicator -->
-                <div id="scanner-status" class="scanner-status scanner-status-ready">
-                    <span class="status-icon">📷</span>
-                    <span class="status-text">Ready to scan</span>
-                </div>
-                
                 <div id="qr-reader"></div>
 
                 <!-- Loading Overlay -->
