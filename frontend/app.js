@@ -453,13 +453,8 @@ async function endSessionAndSubmit() {
             showToast(`${result.not_found} students not found`, 'warning');
         }
         
-        // Clear scanned list after successful submission
-        if (confirm('Clear scanned list?')) {
-            scannedStudents = [];
-            cooldownCache.clear();
-            updateScannedList();
-            saveScannedStudents();
-        }
+        // Keep the scanned list after submission (don't clear automatically)
+        // Users can manually clear using the "Clear All" button if needed
         
     } catch (error) {
         hideLoader();
@@ -708,6 +703,21 @@ function initScannerPage() {
     if (courseSelect) {
         courseSelect.addEventListener('change', async (e) => {
             const sheetName = e.target.value;
+            
+            // Check if there are scanned students and user is changing session
+            if (scannedStudents.length > 0 && sheetName && sessionContext.sheetName && sessionContext.sheetName !== sheetName) {
+                if (!confirm(`You have ${scannedStudents.length} scanned students. Clear scanned list?`)) {
+                    // User cancelled, revert selection
+                    e.target.value = sessionContext.sheetName;
+                    return;
+                }
+                // Clear the list
+                scannedStudents = [];
+                cooldownCache.clear();
+                updateScannedList();
+                saveScannedStudents();
+            }
+            
             sessionContext.sheetName = sheetName;
             
             const columnSelect = document.getElementById('attendance-column');
@@ -750,7 +760,23 @@ function initScannerPage() {
     const columnSelect = document.getElementById('attendance-column');
     if (columnSelect) {
         columnSelect.addEventListener('change', (e) => {
-            sessionContext.columnName = e.target.value;
+            const columnName = e.target.value;
+            
+            // Check if there are scanned students and user is changing session
+            if (scannedStudents.length > 0 && columnName && sessionContext.columnName && sessionContext.columnName !== columnName) {
+                if (!confirm(`You have ${scannedStudents.length} scanned students. Clear scanned list?`)) {
+                    // User cancelled, revert selection
+                    e.target.value = sessionContext.columnName;
+                    return;
+                }
+                // Clear the list
+                scannedStudents = [];
+                cooldownCache.clear();
+                updateScannedList();
+                saveScannedStudents();
+            }
+            
+            sessionContext.columnName = columnName;
             updateScannerButtons();
             
             // If both course and week are selected, save session context
