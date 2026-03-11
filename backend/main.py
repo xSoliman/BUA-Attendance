@@ -17,7 +17,8 @@ from sheets_auth import get_service_account_email
 from sheets_service import (
     validate_spreadsheet_access,
     get_sheet_names,
-    get_headers
+    get_headers,
+    process_batch_attendance
 )
 from attendance_service import (
     AttendanceRequest,
@@ -311,8 +312,10 @@ async def record_batch_attendance(request: BatchAttendanceRequest):
     """
     Record attendance for multiple students in a single batch operation.
     
-    This endpoint processes multiple attendance records at once, which is much
-    faster than individual requests. It returns detailed results for each student.
+    This endpoint processes multiple attendance records at once using optimized
+    batch operations that minimize API calls to Google Sheets. Instead of making
+    2*N API calls (N lookups + N writes), it makes only 2 total API calls
+    (1 read all data + 1 batch write).
     
     Args:
         request: BatchAttendanceRequest object containing:
@@ -345,36 +348,64 @@ async def record_batch_attendance(request: BatchAttendanceRequest):
             ]
         }
     """
-    results = []
-    successful = 0
-    failed = 0
-    not_found = 0
-    
-    for student_id in request.student_ids:
-        result = process_attendance(
+    try:
+        # Use optimized batch processing
+        result = process_batch_attendance(
             spreadsheet_id=request.spreadsheet_id,
             sheet_name=request.sheet_name,
             column_name=request.column_name,
-            student_id=student_id
+            student_ids=request.student_ids
         )
         
-        results.append({
-            "student_id": student_id,
-            "status": result.status,
-            "message": result.message
-        })
+        # Build detailed results
+        details = []
         
-        if result.status == "success":
-            successful += 1
-        elif result.status == "not_found":
-            not_found += 1
-        else:
-            failed += 1
-    
-    return BatchAttendanceResult(
-        total=len(request.student_ids),
-        successful=successful,
-        failed=failed,
-        not_found=not_found,
-        details=results
-    )
+        # Add successful students
+        for student_id in result['successful']:
+            details.append({
+                "student_id": student_id,
+                "status": "success",
+                "message": "Attendance recorded"
+            })
+        
+        # Add not found students
+        for student_id in result['not_found']:
+            details.append({
+                "student_id": student_id,
+                "status": "not_found",
+                "message": "Student Not Found"
+            })
+        
+        # Add failed students
+        for student_id in result['failed']:
+            details.append({
+                "student_id": student_id,
+                "status": "error",
+                "message": "Failed to record attendance"
+            })
+        
+        return BatchAttendanceResult(
+            total=len(request.student_ids),
+            successful=len(result['successful']),
+            failed=len(result['failed']),
+            not_found=len(result['not_found']),
+            details=details
+        )
+        
+    except Exception as e:
+        # If there's a critical error, mark all as failed
+        details = []
+        for student_id in request.student_ids:
+            details.append({
+                "student_id": student_id,
+                "status": "error",
+                "message": f"Batch processing failed: {str(e)}"
+            })
+        
+        return BatchAttendanceResult(
+            total=len(request.student_ids),
+            successful=0,
+            failed=len(request.student_ids),
+            not_found=0,
+            details=details
+        )

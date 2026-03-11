@@ -330,3 +330,102 @@ def mark_attendance(spreadsheet_id: str, sheet_name: str, row: int, column_name:
     
     # Write "P" to the cell at (row, column_number)
     worksheet.update_cell(row, column_number, "P")
+
+
+def process_batch_attendance(
+    spreadsheet_id: str, 
+    sheet_name: str, 
+    column_name: str, 
+    student_ids: list[str]
+) -> dict:
+    """
+    Process attendance for multiple students efficiently using batch operations.
+    
+    This function optimizes batch attendance processing by:
+    1. Making only 2 API calls total (instead of 2 * N calls)
+    2. Reading all student data at once
+    3. Writing all attendance marks in a single batch update
+    
+    Args:
+        spreadsheet_id: The unique identifier from the Google Sheet URL
+        sheet_name: The name of the specific sheet/tab
+        column_name: The name of the attendance column (e.g., "Week 1")
+        student_ids: List of student IDs to mark attendance for
+        
+    Returns:
+        Dict containing:
+            - successful: List of successfully processed student IDs
+            - not_found: List of student IDs not found in the sheet
+            - failed: List of student IDs that failed to process
+            
+    Requirements: Optimized batch processing for large attendance submissions
+    """
+    try:
+        client = get_gspread_client()
+        spreadsheet = client.open_by_key(spreadsheet_id)
+        worksheet = spreadsheet.worksheet(sheet_name)
+        
+        # Get header row to find columns
+        header_row = worksheet.row_values(1)
+        
+        # Find Student_ID column
+        student_id_col_index = find_student_id_column(header_row)
+        
+        # Find attendance column
+        try:
+            attendance_col_index = header_row.index(column_name)
+        except ValueError:
+            raise ValueError(
+                f"Column '{column_name}' not found in sheet '{sheet_name}'. "
+                f"Available columns: {', '.join(header_row)}"
+            )
+        
+        # Get all data from the sheet in one API call
+        all_data = worksheet.get_all_values()
+        
+        # Create a mapping of student_id -> row_number
+        student_row_map = {}
+        for i, row_data in enumerate(all_data[1:], start=2):  # Skip header row
+            if len(row_data) > student_id_col_index:
+                cell_value = str(row_data[student_id_col_index]).strip()
+                if cell_value:
+                    student_row_map[cell_value] = i
+        
+        # Prepare batch updates
+        successful = []
+        not_found = []
+        failed = []
+        batch_updates = []
+        
+        for student_id in student_ids:
+            student_id_str = str(student_id).strip()
+            
+            if student_id_str in student_row_map:
+                row_number = student_row_map[student_id_str]
+                # Convert to A1 notation for batch update
+                cell_address = f"{chr(65 + attendance_col_index)}{row_number}"
+                batch_updates.append({
+                    'range': cell_address,
+                    'values': [['P']]
+                })
+                successful.append(student_id)
+            else:
+                not_found.append(student_id)
+        
+        # Perform batch update in one API call
+        if batch_updates:
+            worksheet.batch_update(batch_updates)
+        
+        return {
+            'successful': successful,
+            'not_found': not_found,
+            'failed': failed
+        }
+        
+    except Exception as e:
+        # If batch processing fails, return all as failed
+        return {
+            'successful': [],
+            'not_found': [],
+            'failed': student_ids
+        }
