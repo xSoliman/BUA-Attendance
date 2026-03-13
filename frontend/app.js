@@ -394,7 +394,7 @@ function downloadScannedList() {
     showToast('Downloaded!', 'success');
 }
 
-async function endSessionAndSubmit() {
+async function submitAttendanceToSheet() {
     if (scannedStudents.length === 0) {
         showToast('No students to submit', 'warning');
         return;
@@ -847,10 +847,10 @@ function initScannerPage() {
         clearInterval(cleanupInterval);
     });
     
-    // End Session button
-    const endSessionBtn = document.getElementById('end-session');
-    if (endSessionBtn) {
-        endSessionBtn.addEventListener('click', endSessionAndSubmit);
+    // Submit Attendance button
+    const submitAttendanceBtn = document.getElementById('submit-attendance');
+    if (submitAttendanceBtn) {
+        submitAttendanceBtn.addEventListener('click', submitAttendanceToSheet);
     }
     
     // Clear Scans button
@@ -891,12 +891,12 @@ function updateScannerButtons() {
     
     // Enable/disable buttons based on session readiness
     const submitManualBtn = document.getElementById('submit-manual');
-    const endSessionBtn = document.getElementById('end-session');
+    const submitAttendanceBtn = document.getElementById('submit-attendance');
     const clearScansBtn = document.getElementById('clear-scans');
     const downloadBtn = document.getElementById('download-txt');
     
     if (submitManualBtn) submitManualBtn.disabled = !sessionReady;
-    if (endSessionBtn) endSessionBtn.disabled = !sessionReady || scannedStudents.length === 0;
+    if (submitAttendanceBtn) submitAttendanceBtn.disabled = !sessionReady || scannedStudents.length === 0;
     if (clearScansBtn) clearScansBtn.disabled = scannedStudents.length === 0;
     if (downloadBtn) downloadBtn.disabled = scannedStudents.length === 0;
 }

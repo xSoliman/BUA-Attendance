@@ -1,0 +1,75 @@
+╔══════════════════════════════════════════════════════════════════╗
+║           Past Week Warning Feature - Visual Example            ║
+╚══════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────┐
+│  Week / Session Dropdown (Current Week: 5)                      │
+├─────────────────────────────────────────────────────────────────┤
+│  Select a week                                                   │
+│  Week 1 ⚠️ (Past Week)          [RED, italic]                   │
+│  Week 2 ⚠️ (Past Week)          [RED, italic]                   │
+│  Week 3 ⚠️ (Past Week)          [RED, italic]                   │
+│  Week 4 ⚠️ (Past Week)          [RED, italic]                   │
+│  Week 5 ⭐ (Current Week)       [BLUE, bold]  ← Recommended     │
+│  Week 6                          [Normal text]                   │
+│  Week 7                          [Normal text]                   │
+│  Week 8                          [Normal text]                   │
+│  Week 9                          [Normal text]                   │
+│  Week 10                         [Normal text]                   │
+└─────────────────────────────────────────────────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════
+WHEN USER SELECTS A PAST WEEK (e.g., Week 3):
+═══════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────┐
+│                      ⚠️ WARNING DIALOG                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ⚠️ WARNING: You selected "Week 3" which is a PAST WEEK.       │
+│                                                                  │
+│  Current week is: Week 5                                        │
+│                                                                  │
+│  If you continue:                                               │
+│  • You will OVERWRITE any existing attendance data for          │
+│    this week                                                    │
+│  • Students already marked as present may be changed            │
+│                                                                  │
+│  Are you sure you want to continue?                             │
+│                                                                  │
+│                  [ Cancel ]    [ OK ]                           │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+
+
+IF USER CLICKS "OK":
+═══════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────┐
+│  🟡 Toast Notification (appears for 3 seconds)                  │
+│  ⚠️ Past week selected: Week 3                                  │
+└─────────────────────────────────────────────────────────────────┘
+
+→ User can now scan QR codes for Week 3
+→ Any existing attendance for Week 3 will be overwritten
+
+
+IF USER CLICKS "CANCEL":
+═══════════════════════════════════════════════════════════════════
+
+→ Week selection is cleared
+→ Dropdown shows "Select a week" again
+→ No changes made
+→ User must select a different week
+
+
+═══════════════════════════════════════════════════════════════════
+COLOR LEGEND:
+═══════════════════════════════════════════════════════════════════
+
+🔴 RED (#dc2626)     - Past weeks (already happened)
+🔵 BLUE (#2563eb)    - Current week (recommended)
+⚫ BLACK (default)   - Future weeks (not yet happened)
+
+═══════════════════════════════════════════════════════════════════
