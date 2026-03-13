@@ -259,6 +259,14 @@ input[type="text"]::placeholder {
     font-weight: 400;
 }
 
+/* Week selection option styling */
+select option {
+    padding: 8px;
+}
+
+/* Note: Some browsers don't support option styling well, 
+   so we handle most styling via JavaScript */
+
 select:disabled {
     background-color: var(--bg);
     color: var(--text-muted);

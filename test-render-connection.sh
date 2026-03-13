@@ -142,4 +142,4 @@ echo "2. Commit and push changes: git add . && git commit -m 'Fix config' && git
 echo "3. Wait for Render to redeploy (~2 minutes)"
 echo "4. Test in browser: $FRONTEND_URL"
 echo ""
-echo "For detailed troubleshooting, see: RENDER_TROUBLESHOOTING.md"
+echo "For detailed troubleshooting, see: docs/RENDER_TROUBLESHOOTING.md"

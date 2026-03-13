@@ -740,13 +740,20 @@ function initScannerPage() {
                 const option = document.createElement('option');
                 option.value = column;
                 
-                // Check if this is the current week
+                // Check if this is the current week or past week
                 const weekMatch = column.match(/Week (\d+)/i);
-                const isCurrentWeek = weekMatch && currentWeek && parseInt(weekMatch[1]) === currentWeek;
+                const weekNumber = weekMatch ? parseInt(weekMatch[1]) : null;
+                const isCurrentWeek = weekNumber && currentWeek && weekNumber === currentWeek;
+                const isPastWeek = weekNumber && currentWeek && weekNumber < currentWeek;
                 
                 if (isCurrentWeek) {
                     option.textContent = `${column} ⭐ (Current Week)`;
                     option.style.fontWeight = 'bold';
+                    option.style.color = '#2563eb'; // Blue for current week
+                } else if (isPastWeek) {
+                    option.textContent = `${column} ⚠️ (Past Week)`;
+                    option.style.color = '#dc2626'; // Red for past weeks
+                    option.style.fontStyle = 'italic';
                 } else {
                     option.textContent = column;
                 }
@@ -774,6 +781,36 @@ function initScannerPage() {
                 cooldownCache.clear();
                 updateScannedList();
                 saveScannedStudents();
+            }
+            
+            // Check if selected week is a past week
+            if (columnName) {
+                const weekMatch = columnName.match(/Week (\d+)/i);
+                const weekNumber = weekMatch ? parseInt(weekMatch[1]) : null;
+                const currentWeek = getCurrentWeek();
+                const isPastWeek = weekNumber && currentWeek && weekNumber < currentWeek;
+                
+                if (isPastWeek) {
+                    const confirmed = confirm(
+                        `⚠️ WARNING: You selected "${columnName}" which is a PAST WEEK.\n\n` +
+                        `Current week is: Week ${currentWeek}\n\n` +
+                        `If you continue:\n` +
+                        `• You will OVERWRITE any existing attendance data for this week\n` +
+                        `• Students already marked as present may be changed\n\n` +
+                        `Are you sure you want to continue?`
+                    );
+                    
+                    if (!confirmed) {
+                        // User cancelled, clear selection
+                        e.target.value = '';
+                        sessionContext.columnName = '';
+                        updateScannerButtons();
+                        return;
+                    }
+                    
+                    // Show additional warning toast
+                    showToast(`⚠️ Past week selected: ${columnName}`, 'warning');
+                }
             }
             
             sessionContext.columnName = columnName;
