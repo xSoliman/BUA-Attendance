@@ -393,7 +393,7 @@ async def record_batch_attendance(request: BatchAttendanceRequest):
         )
         
     except Exception as e:
-        # If there's a critical error, mark all as failed
+        # If there's a critical error, mark all as failed with the actual error message
         details = []
         for student_id in request.student_ids:
             details.append({

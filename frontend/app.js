@@ -427,7 +427,8 @@ async function submitAttendanceToSheet() {
         });
         
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.detail || `HTTP ${response.status}`);
         }
         
         const result = await response.json();
@@ -435,13 +436,16 @@ async function submitAttendanceToSheet() {
         // Show results
         hideLoader();
         
-        const message = `
-            Submission Complete!\n
-            Total: ${result.total}
-            ✓ Successful: ${result.successful}
-            ✗ Not Found: ${result.not_found}
-            ⚠ Failed: ${result.failed}
-        `;
+        // Check if any failed and show their error message
+        const failedDetails = result.details?.filter(d => d.status === 'error') || [];
+        const firstError = failedDetails[0]?.message || '';
+        
+        const message = `Submission Complete!\n\n` +
+            `Total: ${result.total}\n` +
+            `✓ Successful: ${result.successful}\n` +
+            `✗ Not Found: ${result.not_found}\n` +
+            `⚠ Failed: ${result.failed}` +
+            (firstError ? `\n\nError: ${firstError}` : '');
         
         alert(message);
         

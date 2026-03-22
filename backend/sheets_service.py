@@ -332,6 +332,16 @@ def mark_attendance(spreadsheet_id: str, sheet_name: str, row: int, column_name:
     worksheet.update_cell(row, column_number, "P")
 
 
+def col_index_to_a1(col_index: int) -> str:
+    """Convert a 0-based column index to A1 notation letter(s). Supports beyond Z (AA, AB, etc.)"""
+    result = ""
+    col_index += 1  # make 1-based
+    while col_index > 0:
+        col_index, remainder = divmod(col_index - 1, 26)
+        result = chr(65 + remainder) + result
+    return result
+
+
 def process_batch_attendance(
     spreadsheet_id: str, 
     sheet_name: str, 
@@ -340,25 +350,6 @@ def process_batch_attendance(
 ) -> dict:
     """
     Process attendance for multiple students efficiently using batch operations.
-    
-    This function optimizes batch attendance processing by:
-    1. Making only 2 API calls total (instead of 2 * N calls)
-    2. Reading all student data at once
-    3. Writing all attendance marks in a single batch update
-    
-    Args:
-        spreadsheet_id: The unique identifier from the Google Sheet URL
-        sheet_name: The name of the specific sheet/tab
-        column_name: The name of the attendance column (e.g., "Week 1")
-        student_ids: List of student IDs to mark attendance for
-        
-    Returns:
-        Dict containing:
-            - successful: List of successfully processed student IDs
-            - not_found: List of student IDs not found in the sheet
-            - failed: List of student IDs that failed to process
-            
-    Requirements: Optimized batch processing for large attendance submissions
     """
     try:
         client = get_gspread_client()
@@ -397,13 +388,14 @@ def process_batch_attendance(
         failed = []
         batch_updates = []
         
+        col_letter = col_index_to_a1(attendance_col_index)
+        
         for student_id in student_ids:
             student_id_str = str(student_id).strip()
             
             if student_id_str in student_row_map:
                 row_number = student_row_map[student_id_str]
-                # Convert to A1 notation for batch update
-                cell_address = f"{chr(65 + attendance_col_index)}{row_number}"
+                cell_address = f"{col_letter}{row_number}"
                 batch_updates.append({
                     'range': cell_address,
                     'values': [['P']]
@@ -423,9 +415,5 @@ def process_batch_attendance(
         }
         
     except Exception as e:
-        # If batch processing fails, return all as failed
-        return {
-            'successful': [],
-            'not_found': [],
-            'failed': student_ids
-        }
+        # Re-raise so the caller can surface the actual error message
+        raise
