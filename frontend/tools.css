@@ -297,3 +297,38 @@ tbody td input.invalid {
   margin-top: 1rem;
   justify-content: flex-end;
 }
+
+/* ── Pagination ── */
+.pagination-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0 0.75rem;
+  font-size: 0.85rem;
+}
+
+.page-info {
+  color: #555;
+  flex: 1;
+  text-align: center;
+}
+
+.btn-page {
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-page:hover:not(:disabled) {
+  border-color: #0F45A8;
+  color: #0F45A8;
+}
+
+.btn-page:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
