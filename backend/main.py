@@ -25,6 +25,7 @@ from attendance_service import (
     AttendanceResult,
     process_attendance
 )
+from routers.tools import router as tools_router
 
 # Load environment variables
 load_dotenv()
@@ -52,11 +53,13 @@ if custom_origin:
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # List of allowed origins
-    allow_credentials=True,  # Allow cookies and authentication headers
-    allow_methods=["*"],  # Allow all HTTP methods (GET, POST, etc.)
-    allow_headers=["*"],  # Allow all headers
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
+
+app.include_router(tools_router)
 
 
 @app.get("/")

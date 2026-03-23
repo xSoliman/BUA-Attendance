@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tools — Attendance System</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="tools.css" />
+</head>
+<body>
+  <div class="tools-container">
+    <header class="tools-header">
+      <a href="config.html" style="font-size:0.85rem; color:#0F45A8; text-decoration:none;">← Back to Config</a>
+      <h1>Tools</h1>
+      <p class="tools-subtitle">Generate attendance sheets and QR codes for your students.</p>
+    </header>
+
+    <!-- Tab switcher -->
+    <div class="tab-bar" role="tablist">
+      <button class="tab-btn active" role="tab" aria-selected="true"  data-tab="attendance">Attendance Sheet</button>
+      <button class="tab-btn"        role="tab" aria-selected="false" data-tab="qr">QR Codes</button>
+    </div>
+
+    <!-- ── ATTENDANCE TAB ── -->
+    <section class="tab-panel active" id="tab-attendance" role="tabpanel">
+      <div class="panel-intro">
+        <p>Enter your students below, then download a ready-to-use Excel attendance sheet.</p>
+      </div>
+
+      <div class="field-row">
+        <label for="att-output-name">Output file name</label>
+        <input id="att-output-name" type="text" placeholder="e.g. Logic Design" maxlength="80" />
+      </div>
+
+      <div class="table-toolbar">
+        <button class="btn-secondary" id="att-add-row">+ Add row</button>
+        <button class="btn-secondary" id="att-paste-btn" title="Paste tab-separated data (ID, Name, Section)">Paste data</button>
+        <button class="btn-danger-sm" id="att-clear-btn">Clear all</button>
+      </div>
+
+      <div class="table-wrapper">
+        <table id="att-table" aria-label="Student list for attendance sheet">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Student ID <span class="required">*</span></th>
+              <th>Name <span class="required">*</span></th>
+              <th>Section</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="att-tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="action-row">
+        <button class="btn-primary" id="att-generate-btn">Generate &amp; Download</button>
+        <span class="status-msg" id="att-status"></span>
+      </div>
+
+      <div class="info-box" id="att-info-box" hidden>
+        <strong>Next steps after downloading:</strong>
+        <ol>
+          <li>Open the file in Excel or import it into Google Sheets.</li>
+          <li>In Google Sheets, share the sheet with the service account email (found on the Config page) as an <em>Editor</em>.</li>
+          <li>Use the scanner to record attendance — the Total Attendance column updates automatically.</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ── QR TAB ── -->
+    <section class="tab-panel" id="tab-qr" role="tabpanel" hidden>
+      <div class="panel-intro">
+        <p>Enter your students below to generate a QR code for each one. Download as a zip archive.</p>
+      </div>
+
+      <div class="optional-fields">
+        <div class="field-row">
+          <label for="qr-sheet-name">Sheet / Course name <span class="optional-label">(optional — used as top folder in zip)</span></label>
+          <input id="qr-sheet-name" type="text" placeholder="e.g. AI" maxlength="80" />
+        </div>
+        <div class="field-row">
+          <label for="qr-tab-name">Tab / Group name <span class="optional-label">(optional — used as sub-folder in zip)</span></label>
+          <input id="qr-tab-name" type="text" placeholder="e.g. Section A" maxlength="80" />
+        </div>
+      </div>
+
+      <div class="table-toolbar">
+        <button class="btn-secondary" id="qr-add-row">+ Add row</button>
+        <button class="btn-secondary" id="qr-paste-btn" title="Paste tab-separated data (ID, Name, Section)">Paste data</button>
+        <button class="btn-danger-sm" id="qr-clear-btn">Clear all</button>
+      </div>
+
+      <div class="table-wrapper">
+        <table id="qr-table" aria-label="Student list for QR generation">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Student ID <span class="required">*</span></th>
+              <th>Name <span class="required">*</span></th>
+              <th>Section <span class="optional-label">(folder)</span></th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="qr-tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="action-row">
+        <button class="btn-primary" id="qr-generate-btn">Generate &amp; Download</button>
+        <span class="status-msg" id="qr-status"></span>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Paste modal -->
+  <div class="modal-overlay" id="paste-modal" hidden role="dialog" aria-modal="true" aria-labelledby="paste-modal-title">
+    <div class="modal">
+      <h2 id="paste-modal-title">Paste student data</h2>
+      <p class="modal-hint">Paste tab-separated or comma-separated rows.<br/>
+        Expected columns: <code>ID, Name, Section</code> (Section is optional).<br/>
+        You can copy directly from Excel or Google Sheets.
+      </p>
+      <textarea id="paste-area" rows="10" placeholder="20210001&#9;Ahmed Mohamed&#9;A1&#10;20210002&#9;Sara Ali&#9;A2"></textarea>
+      <div class="modal-actions">
+        <button class="btn-primary" id="paste-confirm">Import</button>
+        <button class="btn-secondary" id="paste-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="tools.js"></script>
+</body>
+</html>
