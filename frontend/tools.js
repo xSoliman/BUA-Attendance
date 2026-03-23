@@ -49,7 +49,7 @@ function parsePaste(text) {
 // ── Paginated student store ───────────────────────────────────────────────────
 // The attendance table is backed by an in-memory array; the DOM shows one page.
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
 /**
  * Creates a paginated table controller.
@@ -315,8 +315,7 @@ document.getElementById("qr-generate-btn").addEventListener("click", async () =>
   if (errors.length) { setStatus(statusEl, "error", errors[0]); return; }
   if (!students.length) { setStatus(statusEl, "error", "Add at least one student."); return; }
 
-  const sheetName = document.getElementById("qr-sheet-name").value.trim();
-  const tabName   = document.getElementById("qr-tab-name").value.trim();
+  const college = document.getElementById("qr-college").value.trim();
 
   btn.disabled = true;
   setStatus(statusEl, "loading", "Generating QR codes…");
@@ -325,7 +324,7 @@ document.getElementById("qr-generate-btn").addEventListener("click", async () =>
     const res = await fetch(`${API_BASE}/api/tools/generate-qr`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ students, sheet_name: sheetName, tab_name: tabName }),
+      body: JSON.stringify({ students, college }),
     });
 
     if (!res.ok) {

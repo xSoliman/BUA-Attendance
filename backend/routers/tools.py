@@ -27,8 +27,7 @@ class AttendanceRequest(BaseModel):
 
 class QRRequest(BaseModel):
     students: list[Student]
-    sheet_name: str = ""
-    tab_name: str = ""
+    college: str = ""
 
 
 @router.post("/generate-attendance")
@@ -40,7 +39,6 @@ def generate_attendance(req: AttendanceRequest):
     xlsx_bytes = generate_attendance_sheet(student_dicts)
 
     filename = req.output_name.strip() or "Attendance"
-    # Sanitize filename
     filename = "".join(c for c in filename if c.isalnum() or c in " _-").strip()
     if not filename:
         filename = "Attendance"
@@ -60,8 +58,7 @@ def generate_qr(req: QRRequest):
     student_dicts = [s.model_dump() for s in req.students]
     zip_bytes = generate_qr_zip(
         student_dicts,
-        sheet_name=req.sheet_name.strip(),
-        tab_name=req.tab_name.strip(),
+        college=req.college.strip(),
     )
 
     return Response(

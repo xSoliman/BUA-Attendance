@@ -1,39 +1,77 @@
 """
 Core QR code generation logic.
-Rewritten from scripts/qr_generator/generate_qr.py
-with same logic, exposed as callable functions (no CLI dependency).
+Supports Arabic text via arabic-reshaper + python-bidi.
+Directory structure: [college/]group/section/id.png
 """
 
 import io
+import re
 import zipfile
+
 import qrcode
 from PIL import Image, ImageDraw, ImageFont
 
+# Arabic reshaping — graceful fallback if libs not installed
+try:
+    import arabic_reshaper
+    from bidi.algorithm import get_display as bidi_display
+    _ARABIC_SUPPORT = True
+except ImportError:
+    _ARABIC_SUPPORT = False
 
-# Arabic-capable font search paths (same as original script)
+
+# Font search order — prefer Noto Arabic for full Arabic coverage
 _FONT_PATHS = [
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-    "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+    "/usr/share/fonts/truetype/noto/NotoNaskhArabic-Regular.ttf",
     "/usr/share/fonts/truetype/noto/NotoSansArabic-Regular.ttf",
     "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
     "C:\\Windows\\Fonts\\arial.ttf",
     "C:\\Windows\\Fonts\\tahoma.ttf",
     "/System/Library/Fonts/Supplemental/Arial.ttf",
     "/Library/Fonts/Arial.ttf",
 ]
 
+_font_cache: dict = {}
 
-def _load_font(size: int = 16):
+
+def _load_font(size: int = 16) -> ImageFont.FreeTypeFont:
+    if size in _font_cache:
+        return _font_cache[size]
     for path in _FONT_PATHS:
         try:
-            return ImageFont.truetype(path, size)
+            f = ImageFont.truetype(path, size)
+            _font_cache[size] = f
+            return f
         except Exception:
             continue
+    # Last resort — PIL built-in (no Arabic, but won't crash)
     return ImageFont.load_default()
 
 
+def _prepare_text(text: str) -> str:
+    """Reshape + apply bidi algorithm so Arabic renders correctly in PIL."""
+    if not _ARABIC_SUPPORT:
+        return text
+    try:
+        reshaped = arabic_reshaper.reshape(text)
+        return bidi_display(reshaped)
+    except Exception:
+        return text
+
+
+def _extract_group(section: str) -> str:
+    """
+    Extract group letter(s) from a section code.
+    'A1' -> 'A',  'B12' -> 'B',  'AB3' -> 'AB'
+    """
+    match = re.match(r"^([A-Za-z]+)", section.strip())
+    return match.group(1).upper() if match else "Unknown"
+
+
 def _make_qr_image(student_id: str, student_name: str) -> Image.Image:
-    """Generate QR image with footer. Same logic as original generate_qr.py."""
+    """Generate a QR PNG with a two-line footer (name + ID). Arabic-safe."""
     qr = qrcode.QRCode(
         version=1,
         error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -52,59 +90,50 @@ def _make_qr_image(student_id: str, student_name: str) -> Image.Image:
     draw = ImageDraw.Draw(final)
     font = _load_font(16)
 
-    name_text = str(student_name)
-    id_text = f"ID: {student_id}"
+    name_text = _prepare_text(str(student_name))
+    id_text   = f"ID: {student_id}"
 
-    name_bbox = draw.textbbox((0, 0), name_text, font=font)
-    name_w = name_bbox[2] - name_bbox[0]
-    draw.text(((qr_w - name_w) // 2, qr_h + 15), name_text, fill="black", font=font)
+    def centered_x(text):
+        bbox = draw.textbbox((0, 0), text, font=font)
+        return (qr_w - (bbox[2] - bbox[0])) // 2
 
-    id_bbox = draw.textbbox((0, 0), id_text, font=font)
-    id_w = id_bbox[2] - id_bbox[0]
-    draw.text(((qr_w - id_w) // 2, qr_h + 40), id_text, fill="black", font=font)
+    draw.text((centered_x(name_text), qr_h + 15), name_text, fill="black", font=font)
+    draw.text((centered_x(id_text),   qr_h + 42), id_text,   fill="black", font=font)
 
     return final
 
 
-def generate_qr_zip(
-    students: list[dict],
-    sheet_name: str = "",
-    tab_name: str = "",
-) -> bytes:
+def generate_qr_zip(students: list[dict], college: str = "") -> bytes:
     """
-    Generate a zip archive of QR code PNGs for a list of students.
+    Generate a zip of QR PNGs.
 
-    Each student dict must have: id, name
-    Optional key: section
+    Path inside zip:
+      [college/]<group>/<section>/<id>.png
 
-    Directory structure inside zip:
-      [sheet_name/][tab_name/][section/]<id>.png
-
-    Returns raw bytes of the .zip file.
+    Group is derived automatically from the section code (leading letters).
     """
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
         for student in students:
-            student_id = str(student.get("id", "")).strip()
-            student_name = str(student.get("name", "")).strip()
-            section = str(student.get("section", "")).strip()
+            student_id   = str(student.get("id",      "")).strip()
+            student_name = str(student.get("name",    "")).strip()
+            section      = str(student.get("section", "")).strip()
 
             if not student_id or student_id == "nan":
                 continue
 
-            img = _make_qr_image(student_id, student_name)
+            group = _extract_group(section) if section else "Unknown"
 
-            # Build path inside zip
             parts = []
-            if sheet_name:
-                parts.append(sheet_name)
-            if tab_name:
-                parts.append(tab_name)
+            if college:
+                parts.append(college)
+            parts.append(group)
             if section:
                 parts.append(section)
             parts.append(f"{student_id}.png")
             zip_path = "/".join(parts)
 
+            img = _make_qr_image(student_id, student_name)
             img_buf = io.BytesIO()
             img.save(img_buf, format="PNG")
             zf.writestr(zip_path, img_buf.getvalue())
