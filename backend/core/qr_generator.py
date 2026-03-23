@@ -24,14 +24,20 @@ except ImportError:
 
 # ── Bundled font (lives next to this file in the repo) ────────────────────────
 _HERE = os.path.dirname(os.path.abspath(__file__))
-_BUNDLED_FONT = os.path.join(_HERE, "NotoNaskhArabic-Regular.ttf")
 
-# System font fallbacks (used only if bundled font is somehow missing)
-_SYSTEM_FONTS = [
+# Arabic font — for name line (supports Arabic glyphs)
+_BUNDLED_ARABIC_FONT = os.path.join(_HERE, "NotoNaskhArabic-Regular.ttf")
+_SYSTEM_ARABIC_FONTS = [
     "/usr/share/fonts/truetype/noto/NotoNaskhArabic-Regular.ttf",
     "/usr/share/fonts/truetype/noto/NotoSansArabic-Regular.ttf",
-    "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
+]
+
+# Latin font — for ID line (supports ASCII/digits, no squares)
+_BUNDLED_LATIN_FONT = os.path.join(_HERE, "DejaVuSans.ttf")
+_SYSTEM_LATIN_FONTS = [
     "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+    "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
     "C:\\Windows\\Fonts\\arial.ttf",
     "/System/Library/Fonts/Supplemental/Arial.ttf",
 ]
@@ -39,16 +45,20 @@ _SYSTEM_FONTS = [
 _font_cache: dict = {}
 
 
-def _load_font(size: int = 16) -> ImageFont.FreeTypeFont:
-    if size in _font_cache:
-        return _font_cache[size]
+def _load_font(size: int = 16, latin: bool = False) -> ImageFont.FreeTypeFont:
+    key = (size, latin)
+    if key in _font_cache:
+        return _font_cache[key]
 
-    # Try bundled font first — guaranteed to exist in the repo
-    candidates = [_BUNDLED_FONT] + _SYSTEM_FONTS
+    if latin:
+        candidates = [_BUNDLED_LATIN_FONT] + _SYSTEM_LATIN_FONTS
+    else:
+        candidates = [_BUNDLED_ARABIC_FONT] + _SYSTEM_ARABIC_FONTS + [_BUNDLED_LATIN_FONT] + _SYSTEM_LATIN_FONTS
+
     for path in candidates:
         try:
             f = ImageFont.truetype(path, size)
-            _font_cache[size] = f
+            _font_cache[key] = f
             return f
         except Exception:
             continue
@@ -94,17 +104,18 @@ def _make_qr_image(student_id: str, student_name: str) -> Image.Image:
     final.paste(qr_img, (0, 0))
 
     draw = ImageDraw.Draw(final)
-    font = _load_font(16)
+    arabic_font = _load_font(16, latin=False)
+    latin_font  = _load_font(16, latin=True)
 
     name_text = _prepare_text(str(student_name))
     id_text   = f"ID: {student_id}"
 
-    def centered_x(text: str) -> int:
+    def centered_x(text: str, font) -> int:
         bbox = draw.textbbox((0, 0), text, font=font)
         return (qr_w - (bbox[2] - bbox[0])) // 2
 
-    draw.text((centered_x(name_text), qr_h + 15), name_text, fill="black", font=font)
-    draw.text((centered_x(id_text),   qr_h + 42), id_text,   fill="black", font=font)
+    draw.text((centered_x(name_text, arabic_font), qr_h + 15), name_text, fill="black", font=arabic_font)
+    draw.text((centered_x(id_text,   latin_font),  qr_h + 42), id_text,   fill="black", font=latin_font)
 
     return final
 
