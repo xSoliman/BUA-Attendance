@@ -46,7 +46,7 @@ function parsePaste(text) {
 
 // ── Paginated table controller ────────────────────────────────────────────────
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 5;
 
 function createPaginatedTable(tbodyEl, paginationEl) {
   let rows = [];
