@@ -316,6 +316,7 @@ document.getElementById("qr-generate-btn").addEventListener("click", async () =>
   if (!students.length) { setStatus(statusEl, "error", "Add at least one student."); return; }
 
   const college = document.getElementById("qr-college").value.trim();
+  const level   = document.getElementById("qr-level").value.trim();
 
   btn.disabled = true;
   setStatus(statusEl, "loading", "Generating QR codes…");
@@ -324,7 +325,7 @@ document.getElementById("qr-generate-btn").addEventListener("click", async () =>
     const res = await fetch(`${API_BASE}/api/tools/generate-qr`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ students, college }),
+      body: JSON.stringify({ students, college, level }),
     });
 
     if (!res.ok) {

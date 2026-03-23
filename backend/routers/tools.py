@@ -9,7 +9,23 @@ from fastapi.responses import Response
 from pydantic import BaseModel
 
 from core.attendance import generate_attendance_sheet
-from core.qr_generator import generate_qr_zip
+@router.post("/generate-qr")
+def generate_qr(req: QRRequest):
+    if not req.students:
+        raise HTTPException(status_code=400, detail="No students provided.")
+
+    student_dicts = [s.model_dump() for s in req.students]
+    zip_bytes = generate_qr_zip(
+        student_dicts,
+        college=req.college.strip(),
+        level=req.level.strip(),
+    )
+
+    return Response(
+        content=zip_bytes,
+        media_type="application/zip",
+        headers={"Content-Disposition": 'attachment; filename="qr_codes.zip"'},
+    )
 
 router = APIRouter(prefix="/api/tools", tags=["tools"])
 
@@ -28,6 +44,7 @@ class AttendanceRequest(BaseModel):
 class QRRequest(BaseModel):
     students: list[Student]
     college: str = ""
+    level: str = ""
 
 
 @router.post("/generate-attendance")
