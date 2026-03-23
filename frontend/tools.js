@@ -2,7 +2,6 @@
  * tools.js — GUI logic for Attendance Sheet & QR Code generators
  */
 
-// Match the same API base used by app.js
 const API_BASE = "https://bua-attendance.onrender.com";
 
 // ── Utilities ────────────────────────────────────────────────────────────────
@@ -32,162 +31,104 @@ function esc(v) {
   return (v || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
 }
 
-/** Parse pasted text into [{id, name, section}], skipping blank lines */
 function parsePaste(text) {
   return text
     .split(/\r?\n/)
-    .map((line) => line.trim())
+    .map((l) => l.trim())
     .filter(Boolean)
     .map((line) => {
       const sep = line.includes("\t") ? "\t" : ",";
       const parts = line.split(sep).map((p) => p.trim().replace(/^"|"$/g, ""));
       return { id: parts[0] || "", name: parts[1] || "", section: parts[2] || "" };
     })
-    .filter((s) => s.id.trim() || s.name.trim()); // skip rows with no id AND no name
+    .filter((s) => s.id || s.name);
 }
 
-// ── Paginated student store ───────────────────────────────────────────────────
-// The attendance table is backed by an in-memory array; the DOM shows one page.
+// ── Paginated table controller ────────────────────────────────────────────────
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
 
-/**
- * Creates a paginated table controller.
- * @param {string} tbodyId
- * @param {string} paginationId
- */
-function createPaginatedTable(tbodyId, paginationId) {
-  let rows = []; // [{id, name, section}]
-  let page = 0;  // 0-indexed current page
+function createPaginatedTable(tbodyEl, paginationEl) {
+  let rows = [];
+  let page = 0;
 
-  const tbody = document.getElementById(tbodyId);
-  const pagination = document.getElementById(paginationId);
-
-  function totalPages() {
-    return Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
-  }
+  function totalPages() { return Math.max(1, Math.ceil(rows.length / PAGE_SIZE)); }
 
   function render() {
-    tbody.innerHTML = "";
+    tbodyEl.innerHTML = "";
     const start = page * PAGE_SIZE;
-    const slice = rows.slice(start, start + PAGE_SIZE);
-
-    slice.forEach((row, localIdx) => {
-      const globalIdx = start + localIdx;
+    rows.slice(start, start + PAGE_SIZE).forEach((row, localIdx) => {
+      const gi = start + localIdx; // global index
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td class="row-num">${globalIdx + 1}</td>
+        <td class="row-num">${gi + 1}</td>
         <td><input type="text" placeholder="20210001" value="${esc(row.id)}"      aria-label="Student ID" /></td>
         <td><input type="text" placeholder="Student name" value="${esc(row.name)}" aria-label="Name" /></td>
         <td><input type="text" placeholder="A1" value="${esc(row.section)}"       aria-label="Section" /></td>
-        <td><button class="btn-remove" title="Remove row" aria-label="Remove row">✕</button></td>
+        <td><button class="btn-remove" aria-label="Remove row">✕</button></td>
       `;
-
-      // Sync input changes back to the store
       const inputs = tr.querySelectorAll("input");
-      inputs[0].addEventListener("input", () => { rows[globalIdx].id      = inputs[0].value; });
-      inputs[1].addEventListener("input", () => { rows[globalIdx].name    = inputs[1].value; });
-      inputs[2].addEventListener("input", () => { rows[globalIdx].section = inputs[2].value; });
-
+      inputs[0].addEventListener("input", () => { rows[gi].id      = inputs[0].value; });
+      inputs[1].addEventListener("input", () => { rows[gi].name    = inputs[1].value; });
+      inputs[2].addEventListener("input", () => { rows[gi].section = inputs[2].value; });
       tr.querySelector(".btn-remove").addEventListener("click", () => {
-        rows.splice(globalIdx, 1);
-        // Stay on same page unless it no longer exists
+        rows.splice(gi, 1);
         if (page >= totalPages()) page = totalPages() - 1;
         render();
-        renderPagination();
       });
-
-      tbody.appendChild(tr);
+      tbodyEl.appendChild(tr);
     });
-
     renderPagination();
   }
 
   function renderPagination() {
-    const tp = totalPages();
-    pagination.innerHTML = "";
-
-    if (tp <= 1) return; // no controls needed for a single page
-
-    const info = document.createElement("span");
-    info.className = "page-info";
-    info.textContent = `Page ${page + 1} of ${tp}  (${rows.length} students)`;
-
+    paginationEl.innerHTML = "";
+    if (totalPages() <= 1) return;
     const prev = document.createElement("button");
     prev.className = "btn-page";
     prev.textContent = "← Prev";
     prev.disabled = page === 0;
     prev.addEventListener("click", () => { page--; render(); });
 
+    const info = document.createElement("span");
+    info.className = "page-info";
+    info.textContent = `Page ${page + 1} of ${totalPages()}  (${rows.length} students)`;
+
     const next = document.createElement("button");
     next.className = "btn-page";
     next.textContent = "Next →";
-    next.disabled = page === tp - 1;
+    next.disabled = page === totalPages() - 1;
     next.addEventListener("click", () => { page++; render(); });
 
-    pagination.appendChild(prev);
-    pagination.appendChild(info);
-    pagination.appendChild(next);
+    paginationEl.append(prev, info, next);
   }
 
   return {
-    /** Add a single blank row and jump to its page */
     addRow(data = {}) {
       rows.push({ id: data.id || "", name: data.name || "", section: data.section || "" });
       page = totalPages() - 1;
       render();
     },
-
-    /** Replace all rows (e.g. after paste), skip truly empty entries */
-    setRows(newRows) {
-      rows = newRows.filter((r) => r.id.trim() || r.name.trim());
-      page = 0;
-      render();
-    },
-
-    /** Append rows (paste import) */
     appendRows(newRows) {
-      const filtered = newRows.filter((r) => r.id.trim() || r.name.trim());
-      rows = rows.concat(filtered);
+      rows = rows.concat(newRows.filter((r) => r.id.trim() || r.name.trim()));
       page = totalPages() - 1;
       render();
     },
-
-    /** Clear everything and reset to 5 blank rows */
-    reset() {
-      rows = Array.from({ length: 5 }, () => ({ id: "", name: "", section: "" }));
+    reset(n = 5) {
+      rows = Array.from({ length: n }, () => ({ id: "", name: "", section: "" }));
       page = 0;
       render();
     },
-
-    /**
-     * Collect all non-empty rows with validation.
-     * Returns {students, errors}
-     */
     collect() {
-      // First flush any pending DOM edits (inputs on current page are already synced via events)
-      const students = [];
-      const errors = [];
-
+      const students = [], errors = [];
       rows.forEach((row, i) => {
-        const id   = row.id.trim();
-        const name = row.name.trim();
-        const section = row.section.trim();
-
-        if (!id && !name) return; // skip blank rows silently
-
-        if (!id || !name) {
-          errors.push(`Row ${i + 1}: both ID and Name are required.`);
-          return;
-        }
+        const id = row.id.trim(), name = row.name.trim(), section = row.section.trim();
+        if (!id && !name) return;
+        if (!id || !name) { errors.push(`Row ${i + 1}: ID and Name are required.`); return; }
         students.push({ id, name, section });
       });
-
       return { students, errors };
     },
-
-    getRows() { return rows; },
-    getPage() { return page; },
   };
 }
 
@@ -203,16 +144,13 @@ function openPasteModal(onConfirm) {
 }
 
 document.getElementById("paste-confirm").addEventListener("click", () => {
-  const text = document.getElementById("paste-area").value;
-  const rows = parsePaste(text);
+  const rows = parsePaste(document.getElementById("paste-area").value);
   if (_pasteCallback) _pasteCallback(rows);
   document.getElementById("paste-modal").hidden = true;
 });
-
 document.getElementById("paste-cancel").addEventListener("click", () => {
   document.getElementById("paste-modal").hidden = true;
 });
-
 document.getElementById("paste-modal").addEventListener("click", (e) => {
   if (e.target === e.currentTarget) e.currentTarget.hidden = true;
 });
@@ -227,28 +165,86 @@ document.querySelectorAll(".tab-btn").forEach((btn) => {
       b.setAttribute("aria-selected", b === btn ? "true" : "false");
     });
     document.querySelectorAll(".tab-panel").forEach((panel) => {
-      const isActive = panel.id === "tab-" + target;
-      panel.classList.toggle("active", isActive);
-      panel.hidden = !isActive;
+      const active = panel.id === "tab-" + target;
+      panel.classList.toggle("active", active);
+      panel.hidden = !active;
     });
   });
 });
 
-// ── Attendance tab ────────────────────────────────────────────────────────────
+// ── Attendance tab — multi-course manager ─────────────────────────────────────
 
-const attTable = createPaginatedTable("att-tbody", "att-pagination");
-attTable.reset();
+const attCoursesEl = document.getElementById("att-courses");
+const attControllers = []; // [{nameInput, table, pagiEl}]
 
-document.getElementById("att-add-row").addEventListener("click", () => attTable.addRow());
+function createCourseBlock(index) {
+  const id = `course-${Date.now()}-${index}`;
 
-document.getElementById("att-paste-btn").addEventListener("click", () => {
-  openPasteModal((rows) => attTable.appendRows(rows));
-});
+  const block = document.createElement("div");
+  block.className = "course-block";
+  block.innerHTML = `
+    <div class="course-header">
+      <div class="field-row course-name-field">
+        <label>Course name (tab label) <span class="required">*</span></label>
+        <input type="text" class="course-name-input" placeholder="e.g. Logic Design" maxlength="31" />
+      </div>
+      <div class="course-header-actions">
+        <button class="btn-secondary btn-sm course-add-row">+ Add row</button>
+        <button class="btn-secondary btn-sm course-paste-btn">Paste data</button>
+        <button class="btn-danger-sm btn-sm course-remove-btn">Remove course</button>
+      </div>
+    </div>
+    <div class="table-wrapper">
+      <table aria-label="Student list">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Student ID <span class="required">*</span></th>
+            <th>Name <span class="required">*</span></th>
+            <th>Section</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody class="course-tbody"></tbody>
+      </table>
+    </div>
+    <div class="pagination-bar course-pagination"></div>
+  `;
 
-document.getElementById("att-clear-btn").addEventListener("click", () => {
-  attTable.reset();
-  clearStatus(document.getElementById("att-status"));
-  document.getElementById("att-info-box").hidden = true;
+  const tbodyEl     = block.querySelector(".course-tbody");
+  const pagiEl      = block.querySelector(".course-pagination");
+  const nameInput   = block.querySelector(".course-name-input");
+  const table       = createPaginatedTable(tbodyEl, pagiEl);
+  table.reset(5);
+
+  block.querySelector(".course-add-row").addEventListener("click", () => table.addRow());
+  block.querySelector(".course-paste-btn").addEventListener("click", () => {
+    openPasteModal((rows) => table.appendRows(rows));
+  });
+  block.querySelector(".course-remove-btn").addEventListener("click", () => {
+    const idx = attControllers.findIndex((c) => c.block === block);
+    if (idx !== -1) attControllers.splice(idx, 1);
+    block.remove();
+    renumberCourses();
+  });
+
+  attCoursesEl.appendChild(block);
+  attControllers.push({ block, nameInput, table });
+  renumberCourses();
+}
+
+function renumberCourses() {
+  attControllers.forEach((c, i) => {
+    const label = c.block.querySelector(".course-name-field label");
+    label.innerHTML = `Course ${i + 1} name (tab label) <span class="required">*</span>`;
+  });
+}
+
+// Start with one course
+createCourseBlock(0);
+
+document.getElementById("att-add-course").addEventListener("click", () => {
+  createCourseBlock(attControllers.length);
 });
 
 document.getElementById("att-generate-btn").addEventListener("click", async () => {
@@ -256,22 +252,33 @@ document.getElementById("att-generate-btn").addEventListener("click", async () =
   const btn      = document.getElementById("att-generate-btn");
   const infoBox  = document.getElementById("att-info-box");
 
-  const { students, errors } = attTable.collect();
+  // Validate & collect all courses
+  const courses = [];
+  const errors  = [];
 
-  if (errors.length) { setStatus(statusEl, "error", errors[0]); return; }
-  if (!students.length) { setStatus(statusEl, "error", "Add at least one student."); return; }
+  attControllers.forEach((ctrl, i) => {
+    const name = ctrl.nameInput.value.trim();
+    if (!name) { errors.push(`Course ${i + 1}: name is required.`); return; }
+
+    const { students, errors: rowErrors } = ctrl.table.collect();
+    rowErrors.forEach((e) => errors.push(`Course "${name}": ${e}`));
+    if (students.length) courses.push({ name, students });
+  });
+
+  if (errors.length)  { setStatus(statusEl, "error", errors[0]); return; }
+  if (!courses.length){ setStatus(statusEl, "error", "Add at least one student."); return; }
 
   const outputName = document.getElementById("att-output-name").value.trim() || "Attendance";
 
   btn.disabled = true;
-  setStatus(statusEl, "loading", "Generating…");
+  setStatus(statusEl, "loading", `Generating ${courses.length} course(s)…`);
   infoBox.hidden = true;
 
   try {
     const res = await fetch(`${API_BASE}/api/tools/generate-attendance`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ students, output_name: outputName }),
+      body: JSON.stringify({ courses, output_name: outputName }),
     });
 
     if (!res.ok) {
@@ -280,8 +287,10 @@ document.getElementById("att-generate-btn").addEventListener("click", async () =
     }
 
     const blob = await res.blob();
+    const total = courses.reduce((s, c) => s + c.students.length, 0);
     downloadBlob(blob, `${outputName}.xlsx`);
-    setStatus(statusEl, "success", `Downloaded "${outputName}.xlsx" (${students.length} students)`);
+    setStatus(statusEl, "success",
+      `Downloaded "${outputName}.xlsx" — ${courses.length} course(s), ${total} students`);
     infoBox.hidden = false;
   } catch (e) {
     setStatus(statusEl, "error", "Error: " + e.message);
@@ -292,15 +301,14 @@ document.getElementById("att-generate-btn").addEventListener("click", async () =
 
 // ── QR tab ────────────────────────────────────────────────────────────────────
 
-const qrTable = createPaginatedTable("qr-tbody", "qr-pagination");
+const qrTable = createPaginatedTable(
+  document.getElementById("qr-tbody"),
+  document.getElementById("qr-pagination")
+);
 qrTable.reset();
 
-document.getElementById("qr-add-row").addEventListener("click", () => qrTable.addRow());
-
-document.getElementById("qr-paste-btn").addEventListener("click", () => {
-  openPasteModal((rows) => qrTable.appendRows(rows));
-});
-
+document.getElementById("qr-add-row").addEventListener("click",  () => qrTable.addRow());
+document.getElementById("qr-paste-btn").addEventListener("click", () => openPasteModal((r) => qrTable.appendRows(r)));
 document.getElementById("qr-clear-btn").addEventListener("click", () => {
   qrTable.reset();
   clearStatus(document.getElementById("qr-status"));
@@ -311,9 +319,8 @@ document.getElementById("qr-generate-btn").addEventListener("click", async () =>
   const btn      = document.getElementById("qr-generate-btn");
 
   const { students, errors } = qrTable.collect();
-
-  if (errors.length) { setStatus(statusEl, "error", errors[0]); return; }
-  if (!students.length) { setStatus(statusEl, "error", "Add at least one student."); return; }
+  if (errors.length)   { setStatus(statusEl, "error", errors[0]); return; }
+  if (!students.length){ setStatus(statusEl, "error", "Add at least one student."); return; }
 
   const college = document.getElementById("qr-college").value.trim();
   const level   = document.getElementById("qr-level").value.trim();

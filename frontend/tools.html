@@ -24,37 +24,22 @@
     <!-- ── ATTENDANCE TAB ── -->
     <section class="tab-panel active" id="tab-attendance" role="tabpanel">
       <div class="panel-intro">
-        <p>Enter your students below, then download a ready-to-use Excel attendance sheet.</p>
+        <p>Add one or more courses. Each course becomes a separate tab in the downloaded Excel file.</p>
       </div>
 
       <div class="field-row">
         <label for="att-output-name">Output file name</label>
-        <input id="att-output-name" type="text" placeholder="e.g. Logic Design" maxlength="80" />
+        <input id="att-output-name" type="text" placeholder="e.g. Semester 1 Attendance" maxlength="80" />
       </div>
 
-      <div class="table-toolbar">
-        <button class="btn-secondary" id="att-add-row">+ Add row</button>
-        <button class="btn-secondary" id="att-paste-btn" title="Paste tab-separated data (ID, Name, Section)">Paste data</button>
-        <button class="btn-danger-sm" id="att-clear-btn">Clear all</button>
+      <!-- Course list — courses injected here by JS -->
+      <div id="att-courses"></div>
+
+      <div class="course-add-bar">
+        <button class="btn-secondary" id="att-add-course">+ Add course</button>
       </div>
 
-      <div class="table-wrapper">
-        <table id="att-table" aria-label="Student list for attendance sheet">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Student ID <span class="required">*</span></th>
-              <th>Name <span class="required">*</span></th>
-              <th>Section</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="att-tbody"></tbody>
-        </table>
-      </div>
-      <div class="pagination-bar" id="att-pagination"></div>
-
-      <div class="action-row">
+      <div class="action-row" style="margin-top:1.25rem;">
         <button class="btn-primary" id="att-generate-btn">Generate &amp; Download</button>
         <span class="status-msg" id="att-status"></span>
       </div>

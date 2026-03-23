@@ -332,3 +332,44 @@ tbody td input.invalid {
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+/* ── Multi-course blocks ── */
+.course-block {
+  border: 1px solid #dde3f0;
+  border-radius: 10px;
+  padding: 1rem 1.25rem 0.75rem;
+  margin-bottom: 1rem;
+  background: #fafbff;
+}
+
+.course-header {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.course-name-field {
+  flex: 1;
+  min-width: 220px;
+  max-width: 380px;
+  margin-bottom: 0;
+}
+
+.course-header-actions {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+  padding-bottom: 0.1rem;
+}
+
+.btn-sm {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+.course-add-bar {
+  margin-top: 0.25rem;
+}

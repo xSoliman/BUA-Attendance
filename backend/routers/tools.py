@@ -21,7 +21,7 @@ class Student(BaseModel):
 
 
 class AttendanceRequest(BaseModel):
-    students: list[Student]
+    courses: list[dict]   # [{name: str, students: [{id, name, section}]}]
     output_name: str = "Attendance"
 
 
@@ -33,11 +33,10 @@ class QRRequest(BaseModel):
 
 @router.post("/generate-attendance")
 def generate_attendance(req: AttendanceRequest):
-    if not req.students:
+    if not req.courses or not any(c.get("students") for c in req.courses):
         raise HTTPException(status_code=400, detail="No students provided.")
 
-    student_dicts = [s.model_dump() for s in req.students]
-    xlsx_bytes = generate_attendance_sheet(student_dicts)
+    xlsx_bytes = generate_attendance_sheet(req.courses)
 
     filename = req.output_name.strip() or "Attendance"
     filename = "".join(c for c in filename if c.isalnum() or c in " _-").strip()
