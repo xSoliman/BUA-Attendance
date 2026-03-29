@@ -586,6 +586,43 @@ function updateJSONSubmitBtn() {
     submitBtn.disabled = !(courseSelect?.value && weekSelect?.value && jsonUploadStudents.length > 0);
 }
 
+async function submitBatch(spreadsheetId, sheetName, columnName, studentIds) {
+    const response = await fetch(`${API_BASE_URL}/attendance/batch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            spreadsheet_id: spreadsheetId,
+            sheet_name: sheetName,
+            column_name: columnName,
+            student_ids: studentIds
+        })
+    });
+
+    if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.detail || `HTTP ${response.status}`);
+    }
+
+    return response.json();
+}
+
+function showBatchResult(result) {
+    const failedDetails = result.details?.filter(d => d.status === 'error') || [];
+    const firstError = failedDetails[0]?.message || '';
+
+    alert(
+        `Submission Complete!\n\n` +
+        `Total: ${result.total}\n` +
+        `✓ Successful: ${result.successful}\n` +
+        `✗ Not Found: ${result.not_found}\n` +
+        `⚠ Failed: ${result.failed}` +
+        (firstError ? `\n\nError: ${firstError}` : '')
+    );
+
+    if (result.successful > 0) showToast(`${result.successful} students marked!`, 'success');
+    if (result.not_found > 0) showToast(`${result.not_found} students not found`, 'warning');
+}
+
 async function submitJSONAttendance() {
     const courseSelect = document.getElementById('json-course-select');
     const weekSelect = document.getElementById('json-week-select');
@@ -597,10 +634,8 @@ async function submitJSONAttendance() {
     }
 
     const confirmed = confirm(
-        `Mark attendance for ${jsonUploadStudents.length} students?\n\n` +
-        `Course: ${courseSelect.value}\n` +
-        `Week: ${weekSelect.value}\n\n` +
-        `This will write to your Google Sheet.`
+        `Submit ${jsonUploadStudents.length} scanned students to the server?\n\n` +
+        `This will mark attendance in the Google Sheet.`
     );
     if (!confirmed) return;
 
@@ -608,52 +643,15 @@ async function submitJSONAttendance() {
 
     try {
         const studentIds = jsonUploadStudents.map(s => s.id);
-
-        const response = await fetch(`${API_BASE_URL}/attendance/batch`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                spreadsheet_id: config.spreadsheetId,
-                sheet_name: courseSelect.value,
-                column_name: weekSelect.value,
-                student_ids: studentIds
-            })
-        });
-
-        if (!response.ok) {
-            const errData = await response.json().catch(() => ({}));
-            throw new Error(errData.detail || `HTTP ${response.status}`);
-        }
-
-        const result = await response.json();
+        const result = await submitBatch(config.spreadsheetId, courseSelect.value, weekSelect.value, studentIds);
         hideLoader();
+        showBatchResult(result);
 
-        const failedDetails = result.details?.filter(d => d.status === 'error') || [];
-        const firstError = failedDetails[0]?.message || '';
-
-        alert(
-            `Submission Complete!\n\n` +
-            `Total: ${result.total}\n` +
-            `✓ Successful: ${result.successful}\n` +
-            `✗ Not Found: ${result.not_found}\n` +
-            `⚠ Failed: ${result.failed}` +
-            (firstError ? `\n\nError: ${firstError}` : '')
-        );
-
-        if (result.successful > 0) showToast(`${result.successful} students marked!`, 'success');
-        if (result.not_found > 0) showToast(`${result.not_found} students not found`, 'warning');
-
-        // Reset upload state
-        jsonUploadStudents = [];
-        document.getElementById('json-file-input').value = '';
-        document.getElementById('json-file-name').textContent = 'No file chosen';
-        document.getElementById('json-session-fields').style.display = 'none';
-        renderJSONStudentList();
-
+        // Keep the list after submission — same behaviour as scanner tab
     } catch (error) {
         hideLoader();
-        console.error('JSON submission error:', error);
-        showToast('Failed to submit. Check your connection and try again.', 'error');
+        console.error('Batch submission error:', error);
+        showToast('Failed to submit. Please try again or download backup.', 'error');
     }
 }
 
@@ -662,67 +660,29 @@ async function submitAttendanceToSheet() {
         showToast('No students to submit', 'warning');
         return;
     }
-    
+
     const confirmed = confirm(
         `Submit ${scannedStudents.length} scanned students to the server?\n\n` +
         `This will mark attendance in the Google Sheet.`
     );
-    
     if (!confirmed) return;
-    
-    // Show loader
+
     showLoader();
-    
+
     try {
-        // Extract just the IDs
         const studentIds = scannedStudents.map(s => s.id);
-        
-        // Send batch request
-        const response = await fetch(`${API_BASE_URL}/attendance/batch`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                spreadsheet_id: sessionContext.spreadsheetId,
-                sheet_name: sessionContext.sheetName,
-                column_name: sessionContext.columnName,
-                student_ids: studentIds
-            })
-        });
-        
-        if (!response.ok) {
-            const errData = await response.json().catch(() => ({}));
-            throw new Error(errData.detail || `HTTP ${response.status}`);
-        }
-        
-        const result = await response.json();
-        
-        // Show results
+        const result = await submitBatch(
+            sessionContext.spreadsheetId,
+            sessionContext.sheetName,
+            sessionContext.columnName,
+            studentIds
+        );
         hideLoader();
-        
-        // Check if any failed and show their error message
-        const failedDetails = result.details?.filter(d => d.status === 'error') || [];
-        const firstError = failedDetails[0]?.message || '';
-        
-        const message = `Submission Complete!\n\n` +
-            `Total: ${result.total}\n` +
-            `✓ Successful: ${result.successful}\n` +
-            `✗ Not Found: ${result.not_found}\n` +
-            `⚠ Failed: ${result.failed}` +
-            (firstError ? `\n\nError: ${firstError}` : '');
-        
-        alert(message);
-        
-        if (result.successful > 0) {
-            showToast(`${result.successful} students marked!`, 'success');
-        }
-        
-        if (result.not_found > 0) {
-            showToast(`${result.not_found} students not found`, 'warning');
-        }
-        
+        showBatchResult(result);
+
         // Keep the scanned list after submission (don't clear automatically)
         // Users can manually clear using the "Clear All" button if needed
-        
+
     } catch (error) {
         hideLoader();
         console.error('Batch submission error:', error);
