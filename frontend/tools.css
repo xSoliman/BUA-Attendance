@@ -15,46 +15,7 @@
 
 .tools-subtitle {
   color: #555;
-  margin: 0;
-}
-
-.tools-header-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-}
-
-.tools-header-actions {
-  display: flex;
-  gap: 8px;
-  flex-shrink: 0;
-  flex-wrap: wrap;
-  align-items: center;
-  padding-top: 4px;
-}
-
-.tools-nav-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 7px 14px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #003A75;
-  background: #fff;
-  border: 1px solid #C7D9F0;
-  border-radius: 8px;
-  text-decoration: none;
-  transition: background 0.15s, border-color 0.15s;
-  white-space: nowrap;
-}
-
-.tools-nav-btn:hover {
-  background: #E8F0FB;
-  border-color: #003A75;
+  margin: 0 0 1.5rem;
 }
 
 /* Tab bar */
