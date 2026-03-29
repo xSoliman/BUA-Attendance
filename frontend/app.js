@@ -403,7 +403,7 @@ function downloadScannedListAsJSON() {
     // Ask user for a filename
     const suggested = `${sessionContext.sheetName || 'Course'}_Week${sessionContext.columnName ? sessionContext.columnName.replace(/\D/g, '') : 'X'}`;
     const userFilename = prompt(
-        'Enter a name for the JSON file.\n\nExample: CS101_Week3  or  AI-Lab_Week7',
+        'Enter a name for the JSON file.\n\nExample: LogicDesign_Week3  or  Programming_Week7',
         suggested
     );
 
