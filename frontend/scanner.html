@@ -23,96 +23,121 @@
         </header>
 
         <main>
-            <!-- Session Selection Section -->
-            <div class="session-selection-section">
-                <h3>Session Setup</h3>
-                <div class="session-form-inline">
+            <!-- Page Tabs -->
+            <div class="page-tabs">
+                <button class="page-tab active" data-tab="scan">📷 Scan</button>
+                <button class="page-tab" data-tab="upload">📂 Upload JSON</button>
+            </div>
+
+            <!-- ══ TAB: SCAN ══ -->
+            <div id="tab-scan" class="tab-panel">
+
+                <!-- Session Selection Section -->
+                <div class="session-selection-section">
+                    <h3>Session Setup</h3>
+                    <div class="session-form-inline">
+                        <div class="form-group">
+                            <label for="course-sheet">Course</label>
+                            <select id="course-sheet">
+                                <option value="">Loading courses...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="attendance-column">Week / Session</label>
+                            <select id="attendance-column" disabled>
+                                <option value="">Select a course first</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="loading-indicator" class="hidden">Loading...</div>
+                </div>
+
+                <!-- Scanner Status Bar -->
+                <div class="scanner-status-bar">
+                    <div class="scanner-state">
+                        <span class="status-label">Scanner:</span>
+                        <span id="scanner-status" class="status-value">Initializing...</span>
+                    </div>
+                    <div class="last-scanned">
+                        <span class="status-label">Last Scanned:</span>
+                        <span id="last-scanned" class="status-value">—</span>
+                    </div>
+                </div>
+
+                <!-- QR Scanner -->
+                <div class="scanner-container">
+                    <div id="qr-reader"></div>
+                    <div id="loading-overlay" class="loading-overlay" style="display: none;">
+                        <div class="loader-container">
+                            <div class="loader"></div>
+                            <p class="loader-text">Processing...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Manual Entry -->
+                <div class="manual-entry">
+                    <h3>Manual Entry</h3>
                     <div class="form-group">
-                        <label for="course-sheet">Course</label>
-                        <select id="course-sheet">
-                            <option value="">Loading courses...</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="attendance-column">Week / Session</label>
-                        <select id="attendance-column" disabled>
-                            <option value="">Select a course first</option>
-                        </select>
+                        <input type="text" id="manual-id" placeholder="Enter Student ID" />
+                        <button id="submit-manual" class="btn btn-primary" disabled>Submit</button>
                     </div>
                 </div>
-                <div id="loading-indicator" class="hidden">Loading...</div>
-            </div>
 
-            <!-- Scanner Status Bar -->
-            <div class="scanner-status-bar">
-                <div class="scanner-state">
-                    <span class="status-label">Scanner:</span>
-                    <span id="scanner-status" class="status-value">Initializing...</span>
-                </div>
-                <div class="last-scanned">
-                    <span class="status-label">Last Scanned:</span>
-                    <span id="last-scanned" class="status-value">—</span>
-                </div>
-            </div>
-
-            <!-- QR Scanner -->
-            <div class="scanner-container">
-                <div id="qr-reader"></div>
-
-                <!-- Loading Overlay -->
-                <div id="loading-overlay" class="loading-overlay" style="display: none;">
-                    <div class="loader-container">
-                        <div class="loader"></div>
-                        <p class="loader-text">Processing...</p>
+                <!-- Scanned Students List -->
+                <div class="scanned-list-container">
+                    <div class="scanned-list-header">
+                        <h3>Scanned Students (<span id="scan-count">0</span>)</h3>
+                        <div class="download-btn-group">
+                            <button id="download-txt" class="btn btn-small btn-secondary" title="Download as TXT" disabled>↓ TXT</button>
+                            <button id="download-json" class="btn btn-small btn-secondary" title="Download as JSON (for offline upload later)" disabled>↓ JSON</button>
+                        </div>
+                    </div>
+                    <div id="scanned-list" class="scanned-list">
+                        <p class="empty-message">No students scanned yet</p>
                     </div>
                 </div>
-            </div>
 
-            <!-- Manual Entry -->
-            <div class="manual-entry">
-                <h3>Manual Entry</h3>
-                <div class="form-group">
-                    <input type="text" id="manual-id" placeholder="Enter Student ID" />
-                    <button id="submit-manual" class="btn btn-primary" disabled>Submit</button>
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <button id="submit-attendance" class="btn btn-primary btn-large" disabled>
+                        ✓ Submit &amp; Mark on Sheet
+                    </button>
+                    <button id="clear-scans" class="btn btn-secondary" disabled>
+                        🗑 Clear All
+                    </button>
                 </div>
-            </div>
 
-            <!-- Scanned Students List -->
-            <div class="scanned-list-container">
-                <div class="scanned-list-header">
-                    <h3>Scanned Students (<span id="scan-count">0</span>)</h3>
-                    <div class="download-btn-group">
-                        <button id="download-txt" class="btn btn-small btn-secondary" title="Download as TXT" disabled>
-                            ↓ TXT
-                        </button>
-                        <button id="download-json" class="btn btn-small btn-secondary" title="Download as JSON (for offline upload later)" disabled>
-                            ↓ JSON
-                        </button>
-                    </div>
-                </div>
-                <div id="scanned-list" class="scanned-list">
-                    <p class="empty-message">No students scanned yet</p>
-                </div>
-            </div>
+            </div><!-- /tab-scan -->
 
-            <!-- Upload JSON for Offline Attendance -->
-            <div class="upload-json-section">
-                <details id="upload-json-details">
-                    <summary>📂 Upload attendance JSON to mark</summary>
-                    <div class="upload-json-body">
-                        <p class="upload-json-hint">Upload a previously saved JSON file to mark attendance without re-scanning. The course and week will be pre-filled if the file contains them.</p>
-                        <label for="json-file-input" class="btn btn-secondary btn-small upload-file-label">
-                            Choose JSON file
+            <!-- ══ TAB: UPLOAD JSON ══ -->
+            <div id="tab-upload" class="tab-panel" style="display:none">
+
+                <div class="upload-tab-body">
+
+                    <p class="upload-tab-hint">
+                        Scan students offline, save as JSON, then upload here to mark attendance in your Google Sheet — no live connection needed during the session.
+                    </p>
+
+                    <!-- File picker -->
+                    <div class="upload-file-row">
+                        <label for="json-file-input" class="btn btn-secondary upload-file-label">
+                            📁 Choose JSON file
                             <input type="file" id="json-file-input" accept=".json" style="display:none" />
                         </label>
                         <span id="json-file-name" class="json-file-name">No file chosen</span>
+                    </div>
 
-                        <!-- Session fields shown after file is loaded -->
-                        <div id="json-session-fields" style="display:none">
-                            <div class="json-warning" id="json-session-warning" style="display:none">
-                                ⚠️ The file contains session info (course &amp; week). You can change them below, but make sure you're marking the right session.
-                            </div>
+                    <!-- Session fields — shown after file loads -->
+                    <div id="json-session-fields" style="display:none">
+
+                        <!-- Info notice (shown when file has session data) -->
+                        <div class="json-info-notice" id="json-session-warning" style="display:none">
+                            <span class="json-info-icon">ℹ️</span>
+                            <span>Session info was read from the file. Review the course and week below before marking — you can change them if needed.</span>
+                        </div>
+
+                        <div class="upload-session-row">
                             <div class="form-group">
                                 <label for="json-course-select">Course</label>
                                 <select id="json-course-select">
@@ -125,26 +150,26 @@
                                     <option value="">Select a course first</option>
                                 </select>
                             </div>
-                            <div class="json-student-preview">
-                                <span id="json-student-count"></span>
-                            </div>
-                            <button id="submit-json-attendance" class="btn btn-primary btn-large" disabled>
-                                ✓ Mark Attendance from JSON
-                            </button>
                         </div>
-                    </div>
-                </details>
-            </div>
 
-            <!-- Action Buttons -->
-            <div class="action-buttons">
-                <button id="submit-attendance" class="btn btn-primary btn-large" disabled>
-                    ✓ Submit & Mark on Sheet
-                </button>
-                <button id="clear-scans" class="btn btn-secondary" disabled>
-                    🗑 Clear All
-                </button>
-            </div>
+                        <!-- Student list from JSON -->
+                        <div class="scanned-list-container" id="json-student-list-container">
+                            <div class="scanned-list-header">
+                                <h3>Students in file (<span id="json-student-count">0</span>)</h3>
+                            </div>
+                            <div id="json-student-list" class="scanned-list">
+                                <p class="empty-message">No students loaded</p>
+                            </div>
+                        </div>
+
+                        <button id="submit-json-attendance" class="btn btn-primary btn-large" disabled>
+                            ✓ Mark Attendance from JSON
+                        </button>
+
+                    </div>
+                </div>
+
+            </div><!-- /tab-upload -->
 
             <div id="toast-container"></div>
         </main>

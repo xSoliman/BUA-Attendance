@@ -445,14 +445,13 @@ function initJSONUpload() {
     const sessionWarning = document.getElementById('json-session-warning');
     const courseSelect = document.getElementById('json-course-select');
     const weekSelect = document.getElementById('json-week-select');
-    const studentCount = document.getElementById('json-student-count');
     const submitBtn = document.getElementById('submit-json-attendance');
 
     if (!fileInput) return;
 
     const config = getStoredConfig();
 
-    // Populate course dropdown from the same spreadsheet
+    // Populate course dropdown
     if (config) {
         fetchSheets(config.spreadsheetId).then(sheets => {
             courseSelect.innerHTML = '<option value="">Select a course</option>';
@@ -481,28 +480,21 @@ function initJSONUpload() {
             }
 
             jsonUploadStudents = data.students;
-            studentCount.textContent = `${jsonUploadStudents.length} student(s) in file`;
+            renderJSONStudentList();
 
             const hasCourse = !!data.course;
             const hasWeek = !!data.week;
 
             sessionFields.style.display = 'flex';
-
-            if (hasCourse || hasWeek) {
-                sessionWarning.style.display = 'block';
-            } else {
-                sessionWarning.style.display = 'none';
-            }
+            sessionWarning.style.display = (hasCourse || hasWeek) ? 'flex' : 'none';
 
             // Pre-select course if present
             if (hasCourse) {
-                // Wait for options to be populated
                 const trySelect = () => {
                     const opt = [...courseSelect.options].find(o => o.value === data.course);
                     if (opt) {
                         courseSelect.value = data.course;
                         courseSelect.dispatchEvent(new Event('change'));
-                        // After weeks load, pre-select week
                         if (hasWeek) {
                             const tryWeek = () => {
                                 const wOpt = [...weekSelect.options].find(o => o.value === data.week);
@@ -550,8 +542,40 @@ function initJSONUpload() {
     });
 
     weekSelect.addEventListener('change', updateJSONSubmitBtn);
-
     submitBtn.addEventListener('click', submitJSONAttendance);
+}
+
+function renderJSONStudentList() {
+    const listEl = document.getElementById('json-student-list');
+    const countEl = document.getElementById('json-student-count');
+    if (!listEl) return;
+
+    countEl.textContent = jsonUploadStudents.length;
+
+    if (jsonUploadStudents.length === 0) {
+        listEl.innerHTML = '<p class="empty-message">No students loaded</p>';
+        return;
+    }
+
+    listEl.innerHTML = '';
+    jsonUploadStudents.forEach((student, index) => {
+        const item = document.createElement('div');
+        item.className = 'scanned-item';
+        const displayName = student.name || student.id;
+        const displayId = student.name ? `ID: ${student.id}` : '';
+        const time = student.timestamp
+            ? new Date(student.timestamp).toLocaleTimeString()
+            : '';
+        item.innerHTML = `
+            <div>
+                <div class="student-id">${displayName}</div>
+                ${displayId ? `<div class="student-id-label">${displayId}</div>` : ''}
+                ${time ? `<div class="scan-time">${time}</div>` : ''}
+            </div>
+            <span class="row-num" style="color:var(--text-muted);font-size:12px">${index + 1}</span>
+        `;
+        listEl.appendChild(item);
+    });
 }
 
 function updateJSONSubmitBtn() {
@@ -624,7 +648,7 @@ async function submitJSONAttendance() {
         document.getElementById('json-file-input').value = '';
         document.getElementById('json-file-name').textContent = 'No file chosen';
         document.getElementById('json-session-fields').style.display = 'none';
-        document.getElementById('upload-json-details').removeAttribute('open');
+        renderJSONStudentList();
 
     } catch (error) {
         hideLoader();
@@ -1116,6 +1140,17 @@ function initScannerPage() {
 
     // Initialize JSON upload section
     initJSONUpload();
+
+    // Tab switching
+    document.querySelectorAll('.page-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            const target = tab.dataset.tab;
+            document.querySelectorAll('.page-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            document.getElementById('tab-scan').style.display = target === 'scan' ? '' : 'none';
+            document.getElementById('tab-upload').style.display = target === 'upload' ? '' : 'none';
+        });
+    });
     
     // Manual entry handler
     const submitBtn = document.getElementById('submit-manual');
