@@ -394,6 +394,245 @@ function downloadScannedList() {
     showToast('Downloaded!', 'success');
 }
 
+function downloadScannedListAsJSON() {
+    if (scannedStudents.length === 0) {
+        showToast('No scans to download', 'warning');
+        return;
+    }
+
+    // Ask user for a filename
+    const suggested = `${sessionContext.sheetName || 'Course'}_Week${sessionContext.columnName ? sessionContext.columnName.replace(/\D/g, '') : 'X'}`;
+    const userFilename = prompt(
+        'Enter a name for the JSON file.\n\nExample: CS101_Week3  or  AI-Lab_Week7',
+        suggested
+    );
+
+    if (userFilename === null) return; // user cancelled
+
+    const filename = (userFilename.trim() || suggested)
+        .replace(/[^a-zA-Z0-9_\-\u0600-\u06FF ]/g, '')
+        .trim() || suggested;
+
+    const payload = {
+        course: sessionContext.sheetName || null,
+        week: sessionContext.columnName || null,
+        exported_at: new Date().toISOString(),
+        total: scannedStudents.length,
+        students: scannedStudents.map(s => ({ id: s.id, name: s.name || null, timestamp: s.timestamp }))
+    };
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showToast('JSON downloaded!', 'success');
+}
+
+// ── Upload JSON attendance ────────────────────────────────────────────────────
+
+let jsonUploadStudents = []; // students loaded from JSON file
+
+function initJSONUpload() {
+    const fileInput = document.getElementById('json-file-input');
+    const fileNameSpan = document.getElementById('json-file-name');
+    const sessionFields = document.getElementById('json-session-fields');
+    const sessionWarning = document.getElementById('json-session-warning');
+    const courseSelect = document.getElementById('json-course-select');
+    const weekSelect = document.getElementById('json-week-select');
+    const studentCount = document.getElementById('json-student-count');
+    const submitBtn = document.getElementById('submit-json-attendance');
+
+    if (!fileInput) return;
+
+    const config = getStoredConfig();
+
+    // Populate course dropdown from the same spreadsheet
+    if (config) {
+        fetchSheets(config.spreadsheetId).then(sheets => {
+            courseSelect.innerHTML = '<option value="">Select a course</option>';
+            sheets.forEach(sheet => {
+                const opt = document.createElement('option');
+                opt.value = sheet;
+                opt.textContent = sheet;
+                courseSelect.appendChild(opt);
+            });
+        });
+    }
+
+    fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        fileNameSpan.textContent = file.name;
+
+        try {
+            const text = await file.text();
+            const data = JSON.parse(text);
+
+            if (!data.students || !Array.isArray(data.students)) {
+                showToast('Invalid JSON format', 'error');
+                return;
+            }
+
+            jsonUploadStudents = data.students;
+            studentCount.textContent = `${jsonUploadStudents.length} student(s) in file`;
+
+            const hasCourse = !!data.course;
+            const hasWeek = !!data.week;
+
+            sessionFields.style.display = 'flex';
+
+            if (hasCourse || hasWeek) {
+                sessionWarning.style.display = 'block';
+            } else {
+                sessionWarning.style.display = 'none';
+            }
+
+            // Pre-select course if present
+            if (hasCourse) {
+                // Wait for options to be populated
+                const trySelect = () => {
+                    const opt = [...courseSelect.options].find(o => o.value === data.course);
+                    if (opt) {
+                        courseSelect.value = data.course;
+                        courseSelect.dispatchEvent(new Event('change'));
+                        // After weeks load, pre-select week
+                        if (hasWeek) {
+                            const tryWeek = () => {
+                                const wOpt = [...weekSelect.options].find(o => o.value === data.week);
+                                if (wOpt) {
+                                    weekSelect.value = data.week;
+                                    weekSelect.dispatchEvent(new Event('change'));
+                                } else {
+                                    setTimeout(tryWeek, 100);
+                                }
+                            };
+                            setTimeout(tryWeek, 300);
+                        }
+                    } else {
+                        setTimeout(trySelect, 100);
+                    }
+                };
+                setTimeout(trySelect, 100);
+            }
+
+            updateJSONSubmitBtn();
+        } catch {
+            showToast('Could not read JSON file', 'error');
+        }
+    });
+
+    courseSelect.addEventListener('change', async () => {
+        const sheetName = courseSelect.value;
+        weekSelect.innerHTML = '<option value="">Select a week</option>';
+        weekSelect.disabled = !sheetName;
+        updateJSONSubmitBtn();
+
+        if (!sheetName || !config) return;
+
+        weekSelect.innerHTML = '<option value="">Loading...</option>';
+        const columns = await fetchColumns(config.spreadsheetId, sheetName);
+        weekSelect.innerHTML = '<option value="">Select a week</option>';
+        columns.forEach(col => {
+            const opt = document.createElement('option');
+            opt.value = col;
+            opt.textContent = col;
+            weekSelect.appendChild(opt);
+        });
+        weekSelect.disabled = false;
+        updateJSONSubmitBtn();
+    });
+
+    weekSelect.addEventListener('change', updateJSONSubmitBtn);
+
+    submitBtn.addEventListener('click', submitJSONAttendance);
+}
+
+function updateJSONSubmitBtn() {
+    const courseSelect = document.getElementById('json-course-select');
+    const weekSelect = document.getElementById('json-week-select');
+    const submitBtn = document.getElementById('submit-json-attendance');
+    if (!submitBtn) return;
+    submitBtn.disabled = !(courseSelect?.value && weekSelect?.value && jsonUploadStudents.length > 0);
+}
+
+async function submitJSONAttendance() {
+    const courseSelect = document.getElementById('json-course-select');
+    const weekSelect = document.getElementById('json-week-select');
+    const config = getStoredConfig();
+
+    if (!config || !courseSelect.value || !weekSelect.value || jsonUploadStudents.length === 0) {
+        showToast('Please select course, week, and load a valid JSON file', 'error');
+        return;
+    }
+
+    const confirmed = confirm(
+        `Mark attendance for ${jsonUploadStudents.length} students?\n\n` +
+        `Course: ${courseSelect.value}\n` +
+        `Week: ${weekSelect.value}\n\n` +
+        `This will write to your Google Sheet.`
+    );
+    if (!confirmed) return;
+
+    showLoader();
+
+    try {
+        const studentIds = jsonUploadStudents.map(s => s.id);
+
+        const response = await fetch(`${API_BASE_URL}/attendance/batch`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                spreadsheet_id: config.spreadsheetId,
+                sheet_name: courseSelect.value,
+                column_name: weekSelect.value,
+                student_ids: studentIds
+            })
+        });
+
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.detail || `HTTP ${response.status}`);
+        }
+
+        const result = await response.json();
+        hideLoader();
+
+        const failedDetails = result.details?.filter(d => d.status === 'error') || [];
+        const firstError = failedDetails[0]?.message || '';
+
+        alert(
+            `Submission Complete!\n\n` +
+            `Total: ${result.total}\n` +
+            `✓ Successful: ${result.successful}\n` +
+            `✗ Not Found: ${result.not_found}\n` +
+            `⚠ Failed: ${result.failed}` +
+            (firstError ? `\n\nError: ${firstError}` : '')
+        );
+
+        if (result.successful > 0) showToast(`${result.successful} students marked!`, 'success');
+        if (result.not_found > 0) showToast(`${result.not_found} students not found`, 'warning');
+
+        // Reset upload state
+        jsonUploadStudents = [];
+        document.getElementById('json-file-input').value = '';
+        document.getElementById('json-file-name').textContent = 'No file chosen';
+        document.getElementById('json-session-fields').style.display = 'none';
+        document.getElementById('upload-json-details').removeAttribute('open');
+
+    } catch (error) {
+        hideLoader();
+        console.error('JSON submission error:', error);
+        showToast('Failed to submit. Check your connection and try again.', 'error');
+    }
+}
+
 async function submitAttendanceToSheet() {
     if (scannedStudents.length === 0) {
         showToast('No students to submit', 'warning');
@@ -868,6 +1107,15 @@ function initScannerPage() {
     if (downloadBtn) {
         downloadBtn.addEventListener('click', downloadScannedList);
     }
+
+    // Download JSON button
+    const downloadJsonBtn = document.getElementById('download-json');
+    if (downloadJsonBtn) {
+        downloadJsonBtn.addEventListener('click', downloadScannedListAsJSON);
+    }
+
+    // Initialize JSON upload section
+    initJSONUpload();
     
     // Manual entry handler
     const submitBtn = document.getElementById('submit-manual');
@@ -903,6 +1151,9 @@ function updateScannerButtons() {
     if (submitAttendanceBtn) submitAttendanceBtn.disabled = !sessionReady || scannedStudents.length === 0;
     if (clearScansBtn) clearScansBtn.disabled = scannedStudents.length === 0;
     if (downloadBtn) downloadBtn.disabled = scannedStudents.length === 0;
+
+    const downloadJsonBtn = document.getElementById('download-json');
+    if (downloadJsonBtn) downloadJsonBtn.disabled = scannedStudents.length === 0;
 }
 
 // Initialize on page load

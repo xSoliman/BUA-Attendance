@@ -297,6 +297,8 @@
 
     <div class="step-card">
       <div class="step-num">8</div>
+    <div class="step-card">
+      <div class="step-num">8</div>
       <div class="step-body">
         <h3>Scan student QR codes</h3>
         <p>Go to the <strong>Scanner</strong> page. Point the camera at each student's QR code. Attendance is recorded instantly in your Google Sheet. Each student can only be scanned once per session.</p>
@@ -314,6 +316,47 @@
       <div class="step-body">
         <h3>Done — attendance is saved automatically</h3>
         <p>Every scan writes a <strong>P</strong> directly to the student's row in your Google Sheet. The <strong>Total Attendance</strong> column updates automatically. No manual saving needed.</p>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         PHASE 4 — OFFLINE SCANNING
+    ══════════════════════════════════════════════════════ -->
+    <p class="phase-title">Phase 4 — Offline scanning (no internet required)</p>
+
+    <div class="step-card">
+      <div class="step-num">9</div>
+      <div class="step-body">
+        <h3>Scan without internet — save as JSON</h3>
+        <p>If you don't have a connection to Google Sheets during the session, scan students as usual. When done, click <strong>↓ JSON</strong> in the scanned list header. You'll be asked to name the file — use a clear name like <code>CS101_Week3</code> so you can identify it later.</p>
+        <a href="scanner.html" class="step-link">Open Scanner →</a>
+        <div class="tip-box">
+          The JSON file stores the course and week automatically if you had them selected. Even if you didn't, you can choose them when uploading.
+        </div>
+      </div>
+    </div>
+
+    <div class="step-connector"></div>
+
+    <div class="step-card">
+      <div class="step-num">10</div>
+      <div class="step-body">
+        <h3>Upload the JSON to mark attendance later</h3>
+        <p>When you're back online, go to the <strong>Scanner</strong> page and scroll down to <strong>Upload attendance (JSON) to mark</strong>. Upload your saved file. The course and week will be pre-filled if the file contains them — you can still change them if needed. Then click <strong>Mark Attendance from JSON</strong> — it works exactly like a normal scan submission.</p>
+        <a href="scanner.html" class="step-link">Open Scanner →</a>
+        <div class="contact-box">
+          <strong>Important:</strong> If the file already has a course and week, a warning will appear before you submit. Double-check the values are correct before marking.
+        </div>
+      </div>
+    </div>
+
+    <div class="step-connector"></div>
+
+    <div class="step-card done">
+      <div class="step-num">✓</div>
+      <div class="step-body">
+        <h3>Done — attendance marked from offline session</h3>
+        <p>The system sends the student IDs from the JSON file to the Google Sheet exactly like a live scan. The <strong>Total Attendance</strong> column updates automatically.</p>
       </div>
     </div>
 
