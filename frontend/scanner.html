@@ -67,12 +67,6 @@
                 <!-- QR Scanner -->
                 <div class="scanner-container">
                     <div id="qr-reader"></div>
-                    <div id="loading-overlay" class="loading-overlay" style="display: none;">
-                        <div class="loader-container">
-                            <div class="loader"></div>
-                            <p class="loader-text">Processing...</p>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- Manual Entry -->
@@ -172,6 +166,14 @@
             </div><!-- /tab-upload -->
 
             <div id="toast-container"></div>
+
+            <!-- Loading overlay — outside tabs so it works on both -->
+            <div id="loading-overlay" class="loading-overlay" style="display: none;">
+                <div class="loader-container">
+                    <div class="loader"></div>
+                    <p class="loader-text">Processing...</p>
+                </div>
+            </div>
         </main>
     </div>
     <script src="app.js"></script>

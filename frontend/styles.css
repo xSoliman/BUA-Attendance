@@ -860,9 +860,6 @@ select:disabled {
 }
 
 /* Disable interaction on scanner during load */
-.loading-overlay ~ #qr-reader {
-    pointer-events: none;
-    opacity: 0.5;
 }
 
 /* ── Utilities ────────────────────────────────────────────── */
