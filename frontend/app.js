@@ -170,6 +170,40 @@ function clearConfig() {
     localStorage.removeItem('qr-attendance-config');
 }
 
+// ── Offline mode ─────────────────────────────────────────────────────────────
+
+function isOfflineMode() {
+    return localStorage.getItem('qr-offline-mode') === 'true';
+}
+
+function setOfflineMode(val) {
+    if (val) {
+        localStorage.setItem('qr-offline-mode', 'true');
+    } else {
+        localStorage.removeItem('qr-offline-mode');
+    }
+}
+
+function showOfflineBanner() {
+    const existing = document.getElementById('offline-banner');
+    if (existing) return;
+
+    const banner = document.createElement('div');
+    banner.id = 'offline-banner';
+    banner.className = 'offline-banner';
+    banner.innerHTML = `
+        <span>Running in offline mode — Google Sheet connection is disabled. Scan and download as JSON, then upload later to mark attendance.</span>
+        <a href="config.html" class="offline-banner-link">Configure connection</a>
+    `;
+
+    // Insert before <main> or as first child of container
+    const container = document.querySelector('.container');
+    const main = document.querySelector('main');
+    if (container && main) {
+        container.insertBefore(banner, main);
+    }
+}
+
 function saveSessionContext(context) {
     sessionStorage.setItem('qr-attendance-session', JSON.stringify(context));
 }
@@ -822,6 +856,8 @@ function initPage() {
         const config = getStoredConfig();
         if (config && config.spreadsheetId) {
             window.location.href = 'scanner.html';
+        } else if (isOfflineMode()) {
+            window.location.href = 'scanner.html';
         } else {
             window.location.href = 'config.html';
         }
@@ -829,6 +865,20 @@ function initPage() {
 }
 
 function initConfigPage() {
+    // Show offline banner if already in offline mode
+    if (isOfflineMode()) {
+        showOfflineBanner();
+    }
+
+    // "Skip" link handler
+    const skipBtn = document.getElementById('skip-config');
+    if (skipBtn) {
+        skipBtn.addEventListener('click', () => {
+            setOfflineMode(true);
+            window.location.href = 'scanner.html';
+        });
+    }
+
     // Load service account email
     fetchServiceAccountEmail().then(email => {
         const emailElement = document.getElementById('service-account-email');
@@ -874,6 +924,7 @@ function initConfigPage() {
             
             if (result.valid) {
                 saveConfig(spreadsheetId);
+                setOfflineMode(false); // clear offline mode on successful config
                 statusDiv.textContent = 'Configuration saved successfully!';
                 statusDiv.className = 'success';
                 setTimeout(() => {
@@ -906,27 +957,44 @@ function initConfigPage() {
 
 function initScannerPage() {
     const config = getStoredConfig();
-    if (!config) {
+    const offline = isOfflineMode();
+
+    if (!config && !offline) {
         window.location.href = 'config.html';
         return;
     }
-    
-    sessionContext.spreadsheetId = config.spreadsheetId;
-    
-    // Load sheets for session selection
-    fetchSheets(config.spreadsheetId).then(sheets => {
-        const select = document.getElementById('course-sheet');
-        if (select) {
-            select.innerHTML = '<option value="">Select a course</option>';
-            sheets.forEach(sheet => {
-                const option = document.createElement('option');
-                option.value = sheet;
-                option.textContent = sheet;
-                select.appendChild(option);
-            });
+
+    // Show offline banner when no Google Sheet is connected
+    if (offline || !config) {
+        showOfflineBanner();
+        // Disable session dropdowns — no API to load from
+        const courseSelect = document.getElementById('course-sheet');
+        const columnSelect = document.getElementById('attendance-column');
+        if (courseSelect) {
+            courseSelect.innerHTML = '<option value="">Not available in offline mode</option>';
+            courseSelect.disabled = true;
         }
-    });
-    
+        if (columnSelect) {
+            columnSelect.innerHTML = '<option value="">Not available in offline mode</option>';
+            columnSelect.disabled = true;
+        }
+    } else {
+        sessionContext.spreadsheetId = config.spreadsheetId;
+
+        // Load sheets for session selection
+        fetchSheets(config.spreadsheetId).then(sheets => {
+            const select = document.getElementById('course-sheet');
+            if (select) {
+                select.innerHTML = '<option value="">Select a course</option>';
+                sheets.forEach(sheet => {
+                    const option = document.createElement('option');
+                    option.value = sheet;
+                    option.textContent = sheet;
+                    select.appendChild(option);
+                });
+            }
+        });
+
     // Course selection handler
     const courseSelect = document.getElementById('course-sheet');
     if (courseSelect) {
@@ -1047,6 +1115,8 @@ function initScannerPage() {
         });
     }
     
+    } // end else (online mode)
+
     // Settings button
     const changeConfigBtn = document.getElementById('change-config-btn');
     if (changeConfigBtn) {

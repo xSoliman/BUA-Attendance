@@ -3,120 +3,220 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>How to Use — BUA Attendance</title>
+  <title>Guide — BUA Attendance</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
   <style>
-    /* ── Guide-specific styles ── */
-    .guide-container {
-      max-width: 720px;
+    /* ── Layout ── */
+    .guide-wrap {
+      max-width: 760px;
       margin: 0 auto;
-      padding: 0 20px 60px;
+      padding: 0 20px 72px;
     }
 
+    /* ── Header ── */
     .guide-header {
-      padding: 18px 0;
-      margin-bottom: 32px;
+      padding: 24px 0 20px;
+      margin-bottom: 36px;
       border-bottom: 2px solid var(--primary-muted);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
     }
 
-    .guide-header h1 {
-      font-size: 22px;
+    .guide-header-text h1 {
+      font-size: 24px;
       font-weight: 700;
       color: var(--primary);
+      line-height: 1.2;
     }
 
-    .guide-header p {
+    .guide-header-text p {
       font-size: 14px;
       color: var(--text-muted);
-      margin-top: 4px;
+      margin-top: 5px;
     }
 
-    /* Phase heading */
-    .phase-title {
+    .guide-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--primary);
+      text-decoration: none;
+      padding: 7px 14px;
+      border: 1px solid var(--primary-muted);
+      border-radius: var(--radius-sm);
+      transition: var(--transition);
+      white-space: nowrap;
+    }
+
+    .guide-back:hover {
+      background: var(--primary-light);
+    }
+
+    /* ── Phase block ── */
+    .phase-block {
+      margin-bottom: 40px;
+    }
+
+    .phase-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .phase-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 12px;
+      border-radius: 20px;
       font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--text-muted);
-      margin: 36px 0 12px;
-      padding-bottom: 6px;
-      border-bottom: 1px solid var(--border);
+      letter-spacing: 0.8px;
+      white-space: nowrap;
     }
 
-    /* Step card */
+    .phase-badge.setup    { background: var(--primary-light);  color: var(--primary); }
+    .phase-badge.dist     { background: #FEF3C7; color: #92400E; }
+    .phase-badge.weekly   { background: #D1FAE5; color: #065F46; }
+    .phase-badge.offline  { background: #F3E8FF; color: #6B21A8; }
+
+    .phase-line {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── Step card ── */
     .step-card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius-lg);
-      padding: 20px 22px;
-      margin-bottom: 12px;
-      box-shadow: var(--shadow-sm);
+      padding: 20px 22px 20px 20px;
       display: flex;
-      gap: 18px;
+      gap: 16px;
       align-items: flex-start;
       position: relative;
       overflow: hidden;
+      transition: box-shadow 0.15s;
     }
 
+    .step-card:hover {
+      box-shadow: var(--shadow-md);
+    }
+
+    /* left accent bar */
     .step-card::before {
       content: '';
       position: absolute;
       top: 0; left: 0; bottom: 0;
-      width: 4px;
+      width: 3px;
       background: var(--primary);
       border-radius: var(--radius-lg) 0 0 var(--radius-lg);
     }
 
-    .step-card.contact::before { background: var(--warning); }
-    .step-card.done::before    { background: var(--success); }
+    .step-card.accent-warning::before { background: var(--warning); }
+    .step-card.accent-success::before { background: var(--success); }
+    .step-card.accent-purple::before  { background: #9333EA; }
 
+    /* ── Step number badge ── */
     .step-num {
       flex-shrink: 0;
-      width: 32px;
-      height: 32px;
+      width: 30px;
+      height: 30px;
       border-radius: 50%;
-      background: var(--primary);
-      color: #fff;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 700;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-top: 1px;
+      margin-top: 2px;
     }
 
-    .step-card.contact .step-num { background: var(--warning); }
-    .step-card.done    .step-num { background: var(--success); }
+    .step-num.num-primary { background: var(--primary);  color: #fff; }
+    .step-num.num-warning { background: var(--warning);  color: #fff; }
+    .step-num.num-success { background: var(--success);  color: #fff; }
+    .step-num.num-purple  { background: #9333EA;          color: #fff; }
 
-    .step-body { flex: 1; }
+    /* ── Step body ── */
+    .step-body { flex: 1; min-width: 0; }
 
     .step-body h3 {
       font-size: 15px;
       font-weight: 600;
       color: var(--text);
-      margin-bottom: 5px;
+      margin-bottom: 6px;
+      line-height: 1.3;
     }
 
     .step-body p {
       font-size: 14px;
       color: var(--text-muted);
-      line-height: 1.6;
-      margin-bottom: 0;
+      line-height: 1.65;
+      margin: 0;
     }
 
     .step-body p + p { margin-top: 6px; }
+
+    /* ── Connector ── */
+    .step-connector {
+      width: 3px;
+      height: 12px;
+      background: var(--border);
+      margin: 0 0 0 29px;
+      border-radius: 2px;
+    }
+
+    /* ── Inline boxes ── */
+    .tip-box, .notice-box, .contact-box {
+      margin-top: 10px;
+      border-radius: var(--radius-md);
+      padding: 10px 14px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .tip-box {
+      background: var(--primary-light);
+      border: 1px solid var(--primary-muted);
+      color: var(--primary-dark);
+    }
+
+    .notice-box {
+      background: #F3E8FF;
+      border: 1px solid #D8B4FE;
+      color: #6B21A8;
+    }
+
+    .contact-box {
+      background: var(--warning-bg);
+      border: 1px solid #F6D860;
+      color: var(--warning-text);
+    }
+
+    .contact-box strong { color: #92400E; }
+
+    /* ── Action link ── */
+    .step-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
 
     .step-link {
       display: inline-flex;
       align-items: center;
       gap: 5px;
-      margin-top: 10px;
-      padding: 7px 14px;
-      background: var(--primary);
-      color: #fff;
+      padding: 6px 14px;
       border-radius: var(--radius-sm);
       font-size: 13px;
       font-weight: 600;
@@ -124,104 +224,90 @@
       transition: var(--transition);
     }
 
-    .step-link:hover { background: var(--primary-dark); }
+    .step-link.primary {
+      background: var(--primary);
+      color: #fff;
+    }
+    .step-link.primary:hover { background: var(--primary-dark); }
 
-    .step-link.secondary {
+    .step-link.ghost {
       background: transparent;
       color: var(--primary);
       border: 1px solid var(--primary-muted);
     }
+    .step-link.ghost:hover { background: var(--primary-light); }
 
-    .step-link.secondary:hover {
-      background: var(--primary-light);
+    /* ── Quick-nav pills at top ── */
+    .phase-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 32px;
     }
 
-    /* Contact box */
-    .contact-box {
-      margin-top: 10px;
-      background: var(--warning-bg);
-      border: 1px solid #f6d860;
-      border-radius: var(--radius-md);
-      padding: 12px 14px;
+    .phase-nav a {
       font-size: 13px;
-      color: var(--warning-text);
-      line-height: 1.6;
-    }
-
-    .contact-box strong { color: #92400e; }
-
-    /* Tip box */
-    .tip-box {
-      margin-top: 10px;
-      background: var(--primary-light);
-      border: 1px solid var(--primary-muted);
-      border-radius: var(--radius-md);
-      padding: 10px 14px;
-      font-size: 13px;
-      color: var(--primary-dark);
-      line-height: 1.6;
-    }
-
-    /* Connector line between steps */
-    .step-connector {
-      width: 2px;
-      height: 10px;
-      background: var(--border);
-      margin: 0 0 0 35px;
-    }
-
-    /* Back link */
-    .back-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 13px;
-      color: var(--primary);
+      font-weight: 500;
+      padding: 5px 14px;
+      border-radius: 20px;
       text-decoration: none;
-      margin-bottom: 4px;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      background: var(--surface);
+      transition: var(--transition);
     }
 
-    .back-link:hover { text-decoration: underline; }
+    .phase-nav a:hover {
+      border-color: var(--primary-muted);
+      color: var(--primary);
+      background: var(--primary-light);
+    }
 
-    @media (max-width: 640px) {
-      .step-card { padding: 16px; gap: 12px; }
-      .step-num  { width: 28px; height: 28px; font-size: 13px; }
+    @media (max-width: 600px) {
+      .guide-header { flex-direction: column; }
+      .step-card { padding: 16px 16px 16px 14px; gap: 12px; }
+      .step-num  { width: 26px; height: 26px; font-size: 12px; }
+      .step-connector { margin-left: 25px; }
     }
   </style>
 </head>
 <body>
-  <div class="guide-container">
+<div class="guide-wrap">
 
-    <header class="guide-header">
-      <a href="index.html" class="back-link">← Home</a>
+  <!-- ── Header ── -->
+  <header class="guide-header">
+    <div class="guide-header-text">
       <h1>How to Use the System</h1>
-      <p>Follow these steps to set up and run attendance for your course.</p>
-    </header>
+      <p>A step-by-step guide to setting up and running attendance for your course.</p>
+    </div>
+    <a href="scanner.html" class="guide-back">← Back to Scanner</a>
+  </header>
 
-    <!-- ══════════════════════════════════════════════════════
-         PHASE 1 — SETUP (one time)
-    ══════════════════════════════════════════════════════ -->
-    <p class="phase-title">Phase 1 — Setup (one time per course)</p>
+  <!-- ── Quick nav ── -->
+  <nav class="phase-nav" aria-label="Jump to phase">
+    <a href="#phase-setup">Setup</a>
+    <a href="#phase-distribute">Distribute QR Codes</a>
+    <a href="#phase-weekly">Weekly Scanning</a>
+    <a href="#phase-offline">Offline Mode</a>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════════════
+       PHASE 1 — SETUP
+  ══════════════════════════════════════════════════════ -->
+  <section class="phase-block" id="phase-setup">
+    <div class="phase-header">
+      <span class="phase-badge setup">Phase 1 — Setup</span>
+      <div class="phase-line"></div>
+      <span style="font-size:12px;color:var(--text-muted);white-space:nowrap">One time per course</span>
+    </div>
 
     <div class="step-card">
-      <div class="step-num">1</div>
+      <div class="step-num num-primary">1</div>
       <div class="step-body">
         <h3>Generate your attendance sheet</h3>
-        <p>Go to the Tools page and open the <strong>Attendance Sheet</strong> tab. Add your students (ID, Name, Section) and give the course a name. You can add multiple courses — each becomes a separate tab in the downloaded file.</p>
-        <p>Download the <code>.xlsx</code> file when done.</p>
-        <a href="tools.html" class="step-link">Open Tools →</a>
-      </div>
-    </div>
-
-    <div class="step-connector"></div>
-
-    <div class="step-card">
-      <div class="step-num">2</div>
-      <div class="step-body">
-        <h3>Import the sheet into Google Sheets</h3>
-        <p>Open <a href="https://sheets.google.com" target="_blank" style="color:var(--primary)">Google Sheets</a>, create a new spreadsheet, then go to <strong>File → Import</strong> and upload the downloaded file.</p>
-        <div class="tip-box">
-          Each course tab will appear as a separate sheet inside the spreadsheet.
+        <p>Open the Tools page and go to the <strong>Attendance Sheet</strong> tab. Add your students (ID, Name, Section) and name the course. You can add multiple courses — each becomes a separate tab in the downloaded file.</p>
+        <div class="step-actions">
+          <a href="tools.html" class="step-link primary">Open Tools</a>
         </div>
       </div>
     </div>
@@ -229,137 +315,191 @@
     <div class="step-connector"></div>
 
     <div class="step-card">
-      <div class="step-num">3</div>
+      <div class="step-num num-primary">2</div>
+      <div class="step-body">
+        <h3>Import into Google Sheets</h3>
+        <p>Open <a href="https://sheets.google.com" target="_blank" style="color:var(--primary);font-weight:500">Google Sheets</a>, create a new spreadsheet, then go to <strong>File → Import</strong> and upload the downloaded <code>.xlsx</code> file.</p>
+        <div class="tip-box">Each course tab will appear as a separate sheet inside the spreadsheet.</div>
+      </div>
+    </div>
+
+    <div class="step-connector"></div>
+
+    <div class="step-card">
+      <div class="step-num num-primary">3</div>
       <div class="step-body">
         <h3>Share the sheet with the service account</h3>
-        <p>The system needs editor access to write attendance. Go to the <strong>Config</strong> page to get the service account email, then share your Google Sheet with that email as an <strong>Editor</strong>.</p>
-        <a href="config.html" class="step-link">Get service account email →</a>
+        <p>The system needs editor access to write attendance. Go to the Config page to get the service account email, then share your Google Sheet with that email as an <strong>Editor</strong>.</p>
+        <div class="step-actions">
+          <a href="config.html" class="step-link primary">Open Config</a>
+        </div>
       </div>
     </div>
 
     <div class="step-connector"></div>
 
     <div class="step-card">
-      <div class="step-num">4</div>
+      <div class="step-num num-primary">4</div>
       <div class="step-body">
-        <h3>Configure the system with your sheet</h3>
-        <p>On the Config page, paste your Google Sheet URL (or just the spreadsheet ID). The system will validate access and save it for scanning sessions.</p>
-        <a href="config.html" class="step-link">Open Config →</a>
+        <h3>Configure the system</h3>
+        <p>On the Config page, paste your Google Sheet URL or spreadsheet ID. The system validates access and saves it for all future scanning sessions.</p>
+        <div class="step-actions">
+          <a href="config.html" class="step-link ghost">Open Config</a>
+        </div>
       </div>
     </div>
 
     <div class="step-connector"></div>
 
     <div class="step-card">
-      <div class="step-num">5</div>
+      <div class="step-num num-primary">5</div>
       <div class="step-body">
         <h3>Generate QR codes for your students</h3>
-        <p>Go to the Tools page and open the <strong>QR Codes</strong> tab. Enter the same student list (or paste from Excel). Optionally fill in College and Level for organized folder structure. Download the <code>.zip</code> file — it contains one QR image per student.</p>
-        <a href="tools.html" class="step-link">Open Tools →</a>
-        <div class="tip-box" style="margin-top:10px;">
-          QR files are named by student ID (e.g. <code>20210001.png</code>). The zip is organized as <code>College / Level / Group / Section / ID.png</code>.
+        <p>Go to the Tools page and open the <strong>QR Codes</strong> tab. Enter the same student list (or paste from Excel). Optionally fill in College and Level for an organized folder structure. Download the <code>.zip</code> — one QR image per student.</p>
+        <div class="tip-box">QR files are named by student ID (e.g. <code>20210001.png</code>), organized as <code>College / Level / Section / ID.png</code>.</div>
+        <div class="step-actions">
+          <a href="tools.html" class="step-link primary">Open Tools</a>
         </div>
       </div>
     </div>
+  </section>
 
-    <!-- ══════════════════════════════════════════════════════
-         PHASE 2 — DISTRIBUTE QR CODES
-    ══════════════════════════════════════════════════════ -->
-    <p class="phase-title">Phase 2 — Distribute QR codes to students</p>
+  <!-- ══════════════════════════════════════════════════════
+       PHASE 2 — DISTRIBUTE
+  ══════════════════════════════════════════════════════ -->
+  <section class="phase-block" id="phase-distribute">
+    <div class="phase-header">
+      <span class="phase-badge dist">Phase 2 — Distribute</span>
+      <div class="phase-line"></div>
+      <span style="font-size:12px;color:var(--text-muted);white-space:nowrap">One time per course</span>
+    </div>
 
-    <div class="step-card contact">
-      <div class="step-num">6</div>
+    <div class="step-card accent-warning">
+      <div class="step-num num-warning">6</div>
       <div class="step-body">
-        <h3>Get QR codes distributed to students</h3>
-        <p>Each student needs to receive their personal QR code. This step involves sending the QR images by email to each student.</p>
+        <h3>Send QR codes to students</h3>
+        <p>Each student needs to receive their personal QR code by email. This step requires assistance.</p>
         <div class="contact-box">
-          <strong>This step requires assistance.</strong><br />
-          Please come to <strong>room AI112</strong> or contact me directly to complete the email distribution for your sections. Bring the list of sections you want to send to.
+          <strong>Contact required.</strong><br />
+          Come to <strong>room AI112</strong> or reach out directly to arrange email distribution for your sections. Bring the list of sections you want to send to.
         </div>
       </div>
     </div>
+  </section>
 
-    <!-- ══════════════════════════════════════════════════════
-         PHASE 3 — WEEKLY SCANNING
-    ══════════════════════════════════════════════════════ -->
-    <p class="phase-title">Phase 3 — Weekly attendance scanning</p>
+  <!-- ══════════════════════════════════════════════════════
+       PHASE 3 — WEEKLY SCANNING
+  ══════════════════════════════════════════════════════ -->
+  <section class="phase-block" id="phase-weekly">
+    <div class="phase-header">
+      <span class="phase-badge weekly">Phase 3 — Weekly Scanning</span>
+      <div class="phase-line"></div>
+      <span style="font-size:12px;color:var(--text-muted);white-space:nowrap">Every session</span>
+    </div>
 
     <div class="step-card">
-      <div class="step-num">7</div>
+      <div class="step-num num-success">7</div>
       <div class="step-body">
-        <h3>Start a scanning session</h3>
-        <p>At the start of each lab, go to the <strong>Session</strong> page. Select your course sheet and the current week column, then tap <strong>Start Session</strong>.</p>
-        <a href="session.html" class="step-link">Open Session →</a>
+        <h3>Select your course and week</h3>
+        <p>Open the Scanner page. At the top, select your course and the current week column. The current week is highlighted automatically.</p>
+        <div class="step-actions">
+          <a href="scanner.html" class="step-link primary">Open Scanner</a>
+        </div>
       </div>
     </div>
 
     <div class="step-connector"></div>
 
     <div class="step-card">
-      <div class="step-num">8</div>
-    <div class="step-card">
-      <div class="step-num">8</div>
+      <div class="step-num num-success">8</div>
       <div class="step-body">
         <h3>Scan student QR codes</h3>
-        <p>Go to the <strong>Scanner</strong> page. Point the camera at each student's QR code. Attendance is recorded instantly in your Google Sheet. Each student can only be scanned once per session.</p>
-        <a href="scanner.html" class="step-link">Open Scanner →</a>
-        <div class="tip-box">
-          Students who don't have their QR can be entered manually by typing their ID.
-        </div>
-      </div>
-    </div>
-
-    <div class="step-connector"></div>
-
-    <div class="step-card done">
-      <div class="step-num">✓</div>
-      <div class="step-body">
-        <h3>Done — attendance is saved automatically</h3>
-        <p>Every scan writes a <strong>P</strong> directly to the student's row in your Google Sheet. The <strong>Total Attendance</strong> column updates automatically. No manual saving needed.</p>
-      </div>
-    </div>
-
-    <!-- ══════════════════════════════════════════════════════
-         PHASE 4 — OFFLINE SCANNING
-    ══════════════════════════════════════════════════════ -->
-    <p class="phase-title">Phase 4 — Offline scanning (no internet required)</p>
-
-    <div class="step-card">
-      <div class="step-num">9</div>
-      <div class="step-body">
-        <h3>Scan without internet — save as JSON</h3>
-        <p>If you don't have a connection to Google Sheets during the session, scan students as usual. When done, click <strong>↓ JSON</strong> in the scanned list header. You'll be asked to name the file — use a clear name like <code>CS101_Week3</code> so you can identify it later.</p>
-        <a href="scanner.html" class="step-link">Open Scanner →</a>
-        <div class="tip-box">
-          The JSON file stores the course and week automatically if you had them selected. Even if you didn't, you can choose them when uploading.
-        </div>
+        <p>Point the camera at each student's QR code. Each scan is recorded locally in real time. Students without their QR can be entered manually by typing their ID.</p>
+        <div class="tip-box">The scanner stays active between scans — no need to reset anything between students.</div>
       </div>
     </div>
 
     <div class="step-connector"></div>
 
     <div class="step-card">
-      <div class="step-num">10</div>
+      <div class="step-num num-success">9</div>
       <div class="step-body">
-        <h3>Upload the JSON to mark attendance later</h3>
-        <p>When you're back online, go to the <strong>Scanner</strong> page and scroll down to <strong>Upload attendance (JSON) to mark</strong>. Upload your saved file. The course and week will be pre-filled if the file contains them — you can still change them if needed. Then click <strong>Mark Attendance from JSON</strong> — it works exactly like a normal scan submission.</p>
-        <a href="scanner.html" class="step-link">Open Scanner →</a>
-        <div class="contact-box">
-          <strong>Important:</strong> If the file already has a course and week, a warning will appear before you submit. Double-check the values are correct before marking.
+        <h3>Submit to Google Sheet</h3>
+        <p>When the session is done, click <strong>Submit &amp; Mark on Sheet</strong>. All scanned students are written to your Google Sheet in one batch. The Total Attendance column updates automatically.</p>
+        <div class="step-actions">
+          <a href="scanner.html" class="step-link primary">Open Scanner</a>
         </div>
       </div>
     </div>
 
     <div class="step-connector"></div>
 
-    <div class="step-card done">
-      <div class="step-num">✓</div>
+    <div class="step-card accent-success">
+      <div class="step-num num-success">✓</div>
       <div class="step-body">
-        <h3>Done — attendance marked from offline session</h3>
-        <p>The system sends the student IDs from the JSON file to the Google Sheet exactly like a live scan. The <strong>Total Attendance</strong> column updates automatically.</p>
+        <h3>Done — attendance is saved</h3>
+        <p>Every submitted student gets a <strong>P</strong> written to their row in the sheet. No manual saving needed.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════
+       PHASE 4 — OFFLINE
+  ══════════════════════════════════════════════════════ -->
+  <section class="phase-block" id="phase-offline">
+    <div class="phase-header">
+      <span class="phase-badge offline">Phase 4 — Offline Mode</span>
+      <div class="phase-line"></div>
+      <span style="font-size:12px;color:var(--text-muted);white-space:nowrap">When no internet is available</span>
+    </div>
+
+    <div class="step-card accent-purple">
+      <div class="step-num num-purple">A</div>
+      <div class="step-body">
+        <h3>Scan without a Google Sheet connection</h3>
+        <p>If you have no internet during the session, open the Scanner page and choose <strong>Continue in offline mode</strong> on the Config page, or just start scanning. All scans are saved locally in the browser.</p>
+        <div class="notice-box">You can still scan, manually enter IDs, and view the scanned list — the Submit button is disabled until you're back online.</div>
+        <div class="step-actions">
+          <a href="scanner.html" class="step-link primary">Open Scanner</a>
+        </div>
       </div>
     </div>
 
-  </div>
+    <div class="step-connector"></div>
+
+    <div class="step-card accent-purple">
+      <div class="step-num num-purple">B</div>
+      <div class="step-body">
+        <h3>Save the session as a JSON file</h3>
+        <p>When done scanning, click <strong>↓ JSON</strong> in the scanned list header. You'll be prompted to name the file — use something clear like <code>CS101_Week3</code>. The file stores the student list along with the course and week if they were selected.</p>
+        <div class="tip-box">Keep the file somewhere accessible — you'll upload it later to mark attendance.</div>
+      </div>
+    </div>
+
+    <div class="step-connector"></div>
+
+    <div class="step-card accent-purple">
+      <div class="step-num num-purple">C</div>
+      <div class="step-body">
+        <h3>Upload the JSON to mark attendance</h3>
+        <p>When you're back online, open the Scanner page and switch to the <strong>Upload JSON</strong> tab. Upload your saved file. The course and week are pre-filled from the file — review them, adjust if needed, then click <strong>Mark Attendance from JSON</strong>.</p>
+        <div class="step-actions">
+          <a href="scanner.html" class="step-link primary">Open Scanner</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-connector"></div>
+
+    <div class="step-card accent-success">
+      <div class="step-num num-success">✓</div>
+      <div class="step-body">
+        <h3>Done — offline session marked</h3>
+        <p>The system submits the student IDs from the file exactly like a live scan. The Total Attendance column updates automatically.</p>
+      </div>
+    </div>
+  </section>
+
+</div>
 </body>
 </html>
