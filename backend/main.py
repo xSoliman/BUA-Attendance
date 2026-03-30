@@ -40,10 +40,12 @@ app = FastAPI(
 # Configure CORS middleware
 # Allow frontend to make requests from different origins
 origins = [
-    "http://localhost:3000",  # Local development
-    "http://localhost:8000",  # Local development (alternative port)
+    "http://localhost:3000",
+    "http://localhost:8000",
+    "http://localhost:8080",  # Docker local frontend
     "http://127.0.0.1:3000",
     "http://127.0.0.1:8000",
+    "http://127.0.0.1:8080",
 ]
 
 # Add custom origins from environment variable if provided

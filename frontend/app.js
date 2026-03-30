@@ -1,7 +1,10 @@
 // QR Attendance System - Main Application Logic
 
 // Configuration
-const API_BASE_URL = 'https://bua-attendance.onrender.com/api';
+const _isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+const API_BASE_URL = _isLocal
+    ? `http://${window.location.hostname}:8000/api`
+    : 'https://bua-attendance.onrender.com/api';
 const COOLDOWN_DURATION = 30000; // 30 seconds in milliseconds
 const TOAST_DURATION = 3000; // 3 seconds
 const REQUEST_TIMEOUT = 10000; // 10 seconds timeout for requests
@@ -244,7 +247,7 @@ function recordAttendanceLocally(studentId, studentName = null) {
     updateLastScanned(studentName, studentId);
     
     // Show toast with name if available
-    const displayText = studentName ? `✓ ${studentName}` : `✓ ${studentId}`;
+    const displayText = studentName ? studentName : studentId;
     showToast(displayText, 'success');
     
     // Save to localStorage for persistence
@@ -262,7 +265,7 @@ function showScannerCooldown() {
         if (countdown > 0) {
             updateScannerStatus('waiting', `Ready in ${countdown}s...`);
         } else {
-            updateScannerStatus('ready', '✓ Ready to scan');
+            updateScannerStatus('ready', 'Ready to scan');
             clearInterval(interval);
         }
     }, 1000);
@@ -304,7 +307,7 @@ function updateScannedList() {
                 <div class="scan-time">${student.displayTime}</div>
             </div>
             <button class="remove-btn" onclick="removeScannedStudent('${student.id}')" title="Remove">
-                ✕
+                ×
             </button>
         `;
         listContainer.appendChild(item);
@@ -613,9 +616,9 @@ function showBatchResult(result) {
     alert(
         `Submission Complete!\n\n` +
         `Total: ${result.total}\n` +
-        `✓ Successful: ${result.successful}\n` +
-        `✗ Not Found: ${result.not_found}\n` +
-        `⚠ Failed: ${result.failed}` +
+        `Successful: ${result.successful}\n` +
+        `Not Found: ${result.not_found}\n` +
+        `Failed: ${result.failed}` +
         (firstError ? `\n\nError: ${firstError}` : '')
     );
 
@@ -746,10 +749,9 @@ function initializeScanner() {
         onScanSuccess,
         onScanError
     ).then(() => {
-        // Scanner started successfully
-        updateScannerStatus('ready', '✓ Ready to scan');
+        updateScannerStatus('ready', 'Ready to scan');
     }).catch(err => {
-        updateScannerStatus('error', '✗ Camera access denied');
+        updateScannerStatus('error', 'Camera access denied');
         showToast('Camera access denied. Please enable camera permissions.', 'error');
         console.error('Scanner error:', err);
     });
@@ -974,12 +976,12 @@ function initScannerPage() {
                 const isPastWeek = weekNumber && currentWeek && weekNumber < currentWeek;
                 
                 if (isCurrentWeek) {
-                    option.textContent = `${column} ⭐ (Current Week)`;
+                    option.textContent = `${column} (Current Week)`;
                     option.style.fontWeight = 'bold';
-                    option.style.color = '#2563eb'; // Blue for current week
+                    option.style.color = '#2563eb';
                 } else if (isPastWeek) {
-                    option.textContent = `${column} ⚠️ (Past Week)`;
-                    option.style.color = '#dc2626'; // Red for past weeks
+                    option.textContent = `${column} (Past Week)`;
+                    option.style.color = '#dc2626';
                     option.style.fontStyle = 'italic';
                 } else {
                     option.textContent = column;
@@ -1019,24 +1021,19 @@ function initScannerPage() {
                 
                 if (isPastWeek) {
                     const confirmed = confirm(
-                        `⚠️ WARNING: You selected "${columnName}" which is a PAST WEEK.\n\n` +
+                        `You selected "${columnName}" which is a past week.\n\n` +
                         `Current week is: Week ${currentWeek}\n\n` +
-                        `If you continue:\n` +
-                        `• You will OVERWRITE any existing attendance data for this week\n` +
-                        `• Students already marked as present may be changed\n\n` +
-                        `Are you sure you want to continue?`
+                        `Continuing will overwrite any existing attendance data for this week. Are you sure?`
                     );
                     
                     if (!confirmed) {
-                        // User cancelled, clear selection
                         e.target.value = '';
                         sessionContext.columnName = '';
                         updateScannerButtons();
                         return;
                     }
                     
-                    // Show additional warning toast
-                    showToast(`⚠️ Past week selected: ${columnName}`, 'warning');
+                    showToast(`Past week selected: ${columnName}`, 'warning');
                 }
             }
             

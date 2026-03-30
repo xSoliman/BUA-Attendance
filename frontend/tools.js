@@ -2,7 +2,10 @@
  * tools.js — GUI logic for Attendance Sheet & QR Code generators
  */
 
-const API_BASE = "https://bua-attendance.onrender.com";
+const _isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+const API_BASE = _isLocal
+    ? `http://${window.location.hostname}:8000`
+    : 'https://bua-attendance.onrender.com';
 
 // ── Utilities ────────────────────────────────────────────────────────────────
 
