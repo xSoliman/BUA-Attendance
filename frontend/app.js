@@ -86,12 +86,12 @@ function parseQRData(qrData) {
         if (parts.length >= 2) {
             const name = parts.slice(0, -1).join(' - ').trim(); // Handle names with " - " in them
             const id = parts[parts.length - 1].trim();
-            return { name, id };
+            return { name, id, unknownFormat: false };
         }
     }
     
-    // Legacy format: just ID
-    return { name: null, id: qrData };
+    // Unrecognized format: treat entire value as ID
+    return { name: null, id: qrData, unknownFormat: true };
 }
 
 function extractSpreadsheetId(input) {
@@ -801,7 +801,7 @@ function onScanError(error) {
 
 function processStudentId(qrData) {
     // Parse QR data to extract name and ID
-    const { name, id } = parseQRData(qrData);
+    const { name, id, unknownFormat } = parseQRData(qrData);
     
     // Check scan delay (2 seconds between scans) - ALWAYS check first
     const now = Date.now();
@@ -828,6 +828,11 @@ function processStudentId(qrData) {
     
     // Record locally (instant, no backend call)
     recordAttendanceLocally(id, name);
+
+    // Warn if QR data wasn't in the expected "Name - ID" format
+    if (unknownFormat) {
+        showToast('Unknown QR format — saved as ID only', 'warning');
+    }
 }
 
 function stopScanner() {
