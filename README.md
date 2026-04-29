@@ -8,7 +8,7 @@ A mobile-first web application for Teaching Assistants to record student attenda
 - **Google Sheets Integration**: Use your existing spreadsheets as the database
 - **Mobile-Optimized UI**: Responsive design for smartphone usage in lab environments
 - **Real-time Feedback**: Instant visual notifications for attendance recording
-- **Duplicate Prevention**: 30-second cooldown to prevent accidental double-scans
+- **Duplicate Prevention**: Session-based duplicate detection — re-scanning a student already in the list shows an instant "Already Scanned" warning
 - **Manual Entry**: Fallback option when QR codes are damaged or unreadable
 - **Multi-Session Support**: Easily switch between courses and weeks
 - **Offline-Ready**: Asynchronous operations maintain UI responsiveness
@@ -203,9 +203,14 @@ The application will be available at `http://localhost:3000`
    - The scanner will automatically detect and process it
 
 2. **Visual Feedback**:
-   - **Green notification**: "Attendance Recorded" - Success!
-   - **Red notification**: "Student Not Found" - Student ID not in the sheet
-   - **Yellow notification**: "Already Scanned" - Student scanned within last 30 seconds
+   - **Green notification**: Attendance recorded successfully
+   - **Orange notification**: Student ID not found in the sheet
+   - **Yellow notification**: Student already scanned this session
+
+3. **Submission Results**:
+   - After submitting, a results modal shows a summary (Total / Marked / Not Found / Failed)
+   - Any students not found or failed to mark are listed by name and ID with a colored badge
+   - No extra API calls — all data comes from the single batch response
 
 3. **Manual Entry** (if QR code is damaged):
    - Type the Student ID in the text field
@@ -348,12 +353,12 @@ Your Google Sheet must follow this structure:
 
 ### Already Scanned Warning
 
-**Problem**: Getting "Already Scanned" for different students
+**Problem**: Getting "Already Scanned" for a student
 
 **Solutions**:
-- This is normal if you scan the same student within 30 seconds
-- Wait 30 seconds and try again
-- If it persists, click "Change Session" and start a new session
+- This is expected if the same student QR code is scanned more than once in a session
+- Remove the student from the scanned list first if you need to re-scan them
+- If it persists unexpectedly, click "Change Session" to start fresh
 
 ### Backend Connection Error
 

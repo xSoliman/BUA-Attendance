@@ -5,10 +5,9 @@ const _isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
 const API_BASE_URL = _isLocal
     ? `http://${window.location.hostname}:8000/api`
     : 'https://bua-attendance.onrender.com/api';
-const COOLDOWN_DURATION = 30000; // 30 seconds in milliseconds
 const TOAST_DURATION = 3000; // 3 seconds
 const REQUEST_TIMEOUT = 10000; // 10 seconds timeout for requests
-const SCAN_DELAY = 2000; // 2 seconds delay between scans
+const SCAN_DELAY = 750; // 750ms delay between scans
 const SEMESTER_START_DATE = new Date('2026-02-07'); // First day of Week 1: February 7, 2026
 
 // State Management
@@ -18,7 +17,6 @@ let sessionContext = {
     columnName: null
 };
 
-let cooldownCache = new Map();
 let qrScanner = null;
 let isProcessing = false; // Flag to prevent concurrent scans
 let processingQueue = new Set(); // Track IDs being processed
@@ -271,9 +269,6 @@ function recordAttendanceLocally(studentId, studentName = null) {
         displayTime: scanTime.toLocaleTimeString()
     });
     
-    // Add to cooldown (30 seconds)
-    addToCooldown(studentId);
-    
     // Update UI
     updateScannedList();
     
@@ -289,20 +284,10 @@ function recordAttendanceLocally(studentId, studentName = null) {
 }
 
 function showScannerCooldown() {
-    let countdown = Math.ceil(SCAN_DELAY / 1000);
-    
-    // Update scanner status immediately
-    updateScannerStatus('waiting', `Ready in ${countdown}s...`);
-    
-    const interval = setInterval(() => {
-        countdown--;
-        if (countdown > 0) {
-            updateScannerStatus('waiting', `Ready in ${countdown}s...`);
-        } else {
-            updateScannerStatus('ready', 'Ready to scan');
-            clearInterval(interval);
-        }
-    }, 1000);
+    updateScannerStatus('waiting', 'Processing...');
+    setTimeout(() => {
+        updateScannerStatus('ready', 'Ready to scan');
+    }, SCAN_DELAY);
 }
 
 function updateScannedList() {
@@ -352,9 +337,6 @@ function removeScannedStudent(studentId) {
     // Remove from scanned list
     scannedStudents = scannedStudents.filter(s => s.id !== studentId);
     
-    // Remove from cooldown
-    cooldownCache.delete(studentId);
-    
     // Update UI
     updateScannedList();
     saveScannedStudents();
@@ -370,12 +352,6 @@ function loadScannedStudents() {
     if (saved) {
         scannedStudents = JSON.parse(saved);
         updateScannedList();
-        
-        // Restore cooldown cache
-        scannedStudents.forEach(student => {
-            const scanTime = new Date(student.timestamp).getTime();
-            cooldownCache.set(student.id, scanTime);
-        });
     }
 }
 
@@ -387,7 +363,7 @@ function clearAllScans() {
     
     if (confirm(`Clear all ${scannedStudents.length} scanned students?`)) {
         scannedStudents = [];
-        cooldownCache.clear();
+
         updateScannedList();
         saveScannedStudents();
         showToast('All scans cleared', 'success');
@@ -644,20 +620,77 @@ async function submitBatch(spreadsheetId, sheetName, columnName, studentIds) {
 }
 
 function showBatchResult(result) {
-    const failedDetails = result.details?.filter(d => d.status === 'error') || [];
-    const firstError = failedDetails[0]?.message || '';
+    const details = result.details || [];
+    const notFound = details.filter(d => d.status === 'not_found');
+    const failed   = details.filter(d => d.status === 'error');
 
-    alert(
-        `Submission Complete!\n\n` +
-        `Total: ${result.total}\n` +
-        `Successful: ${result.successful}\n` +
-        `Not Found: ${result.not_found}\n` +
-        `Failed: ${result.failed}` +
-        (firstError ? `\n\nError: ${firstError}` : '')
-    );
+    // Build summary bar
+    const summaryEl = document.getElementById('result-modal-summary');
+    summaryEl.innerHTML = `
+        <div class="result-stat stat-neutral">
+            <span class="stat-num">${result.total}</span>
+            <span class="stat-lbl">Total</span>
+        </div>
+        <div class="result-stat stat-success">
+            <span class="stat-num">${result.successful}</span>
+            <span class="stat-lbl">Marked</span>
+        </div>
+        <div class="result-stat stat-warning">
+            <span class="stat-num">${result.not_found}</span>
+            <span class="stat-lbl">Not Found</span>
+        </div>
+        <div class="result-stat stat-error">
+            <span class="stat-num">${result.failed}</span>
+            <span class="stat-lbl">Failed</span>
+        </div>
+    `;
 
-    if (result.successful > 0) showToast(`${result.successful} students marked!`, 'success');
-    if (result.not_found > 0) showToast(`${result.not_found} students not found`, 'warning');
+    // Build detail lists (only shown if there are issues)
+    const bodyEl = document.getElementById('result-modal-body');
+    bodyEl.innerHTML = '';
+
+    const renderGroup = (students, type, label) => {
+        if (students.length === 0) return;
+        const group = document.createElement('div');
+        const title = document.createElement('div');
+        title.className = `result-group-title ${type}`;
+        title.textContent = label;
+        group.appendChild(title);
+
+        const list = document.createElement('div');
+        list.className = 'result-student-list';
+        students.forEach(d => {
+            // Look up name from scannedStudents
+            const match = scannedStudents.find(s => s.id === d.student_id);
+            const name = match?.name || '';
+            const item = document.createElement('div');
+            item.className = `result-student-item ${type}`;
+            item.innerHTML = `
+                <span class="student-id">${d.student_id}</span>
+                ${name ? `<span class="student-name">${name}</span>` : ''}
+                <span class="student-badge">${type === 'not_found' ? 'Not Found' : 'Failed'}</span>
+            `;
+            list.appendChild(item);
+        });
+        group.appendChild(list);
+        bodyEl.appendChild(group);
+    };
+
+    renderGroup(notFound, 'not-found', 'Not Found in Sheet');
+    renderGroup(failed,   'failed',    'Failed to Mark');
+
+    if (notFound.length === 0 && failed.length === 0) {
+        bodyEl.innerHTML = `<p style="text-align:center;color:var(--success);font-weight:600;padding:12px 0;">All students marked successfully!</p>`;
+    }
+
+    // Show modal
+    const modal = document.getElementById('result-modal');
+    modal.style.display = 'flex';
+
+    const close = () => { modal.style.display = 'none'; };
+    document.getElementById('result-modal-close').onclick = close;
+    document.getElementById('result-modal-ok').onclick = close;
+    modal.onclick = (e) => { if (e.target === modal) close(); };
 }
 
 async function submitJSONAttendance() {
@@ -727,40 +760,7 @@ async function submitAttendanceToSheet() {
     }
 }
 
-// Cooldown Management
-function addToCooldown(studentId) {
-    cooldownCache.set(studentId, Date.now());
-}
 
-function checkCooldown(studentId) {
-    if (!cooldownCache.has(studentId)) {
-        return false;
-    }
-    
-    const timestamp = cooldownCache.get(studentId);
-    const elapsed = Date.now() - timestamp;
-    
-    if (elapsed >= COOLDOWN_DURATION) {
-        cooldownCache.delete(studentId);
-        return false;
-    }
-    
-    return true;
-}
-
-function clearCooldown() {
-    cooldownCache.clear();
-    processingQueue.clear();
-    isProcessing = false;
-}
-function cleanupCooldown() {
-    const now = Date.now();
-    for (const [studentId, timestamp] of cooldownCache.entries()) {
-        if (now - timestamp >= COOLDOWN_DURATION) {
-            cooldownCache.delete(studentId);
-        }
-    }
-}
 
 // Scanner Functions
 function initializeScanner() {
@@ -808,7 +808,7 @@ function processStudentId(qrData) {
     const timeSinceLastScan = now - lastScanTime;
     
     if (timeSinceLastScan < SCAN_DELAY) {
-        // Silently ignore - scanner is in cooldown period
+    // Silently ignore - scanner is in cooldown period (SCAN_DELAY)
         return;
     }
     
@@ -819,8 +819,8 @@ function processStudentId(qrData) {
     // Show countdown for next scan
     showScannerCooldown();
     
-    // Check if already in cooldown (scanned in last 30 seconds)
-    if (checkCooldown(id)) {
+    // Check if already scanned this session
+    if (scannedStudents.some(s => s.id === id)) {
         const displayText = name ? `${name} already scanned` : 'Already Scanned';
         showToast(displayText, 'warning');
         return;
@@ -1010,7 +1010,7 @@ function initScannerPage() {
                 }
                 // Clear the list
                 scannedStudents = [];
-                cooldownCache.clear();
+        
                 updateScannedList();
                 saveScannedStudents();
             }
@@ -1075,7 +1075,7 @@ function initScannerPage() {
                 }
                 // Clear the list
                 scannedStudents = [];
-                cooldownCache.clear();
+        
                 updateScannedList();
                 saveScannedStudents();
             }
@@ -1132,15 +1132,7 @@ function initScannerPage() {
     
     // Initialize scanner immediately on page load
     initializeScanner();
-    
-    // Start periodic cooldown cleanup (every 5 seconds)
-    const cleanupInterval = setInterval(cleanupCooldown, 5000);
-    
-    // Store interval ID for cleanup on page unload
-    window.addEventListener('beforeunload', () => {
-        clearInterval(cleanupInterval);
-    });
-    
+
     // Submit Attendance button
     const submitAttendanceBtn = document.getElementById('submit-attendance');
     if (submitAttendanceBtn) {
